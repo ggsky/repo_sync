@@ -2,28 +2,24 @@
 # -*- encoding: utf-8 -*-
 '''
 @Contact :   liuyuqi.gov@msn.cn
-@Time    :   2023/04/27 02:59:42
+@Time    :   2023/04/27 05:12:59
 @License :   Copyright © 2017-2022 liuyuqi. All Rights Reserved.
-@Desc    :   github repo
+@Desc    :   gitee repo
 '''
-import os,sys,re
-import logging
-import argparse
-import yaml
 
 from repo_sync.base_repo import BaseRepo
+import logging
+import os
+import yaml
 
-class GitHubRepo(BaseRepo):
-    '''
-    GitHubRepo class
-    '''
+class GiteeRepo(BaseRepo):
+    
     def __init__(self, user_name, repo_name, logger : logging.Logger):
-        super(GitHubRepo, self).__init__(user_name, repo_name,logger)
+        super(GiteeRepo, self).__init__(user_name, repo_name,logger)
         self.repos=None
 
     def sync(self):
-        '''
-        sync repo
+        ''' sync repo
         '''
         # read conf/config.yml
         with open("conf/config.yml", "r") as f:
@@ -31,21 +27,21 @@ class GitHubRepo(BaseRepo):
         # get github token
         zUser = config["zhizhou"]["user"]
         if zUser == self.user_name:
-            self.repo_url = "https://github.com"+"/"+config["github"]["user"]+"/"+self.repo_name+".git"
+            self.repo_url = "https://gitee.com"+"/"+config["gitee"]["user"]+"/"+self.repo_name+".git"
             self.logger.info("sync repo: %s", self.repo_name)
             self.sess.headers={
-                "Authorization": "token "+config["github"]["token"],
+                "Authorization": "token "+config["gitee"]["token"],
             }
             if self.repos==None:
-                res = self.sess.get("https://api.github.com/user/repos")
+                res = self.sess.get("https://api.gitee.com/user/repos")
                 if res.status_code != 200:
-                    self.logger.error("get github repo list failed, status_code: %s, please check the token.", res.status_code)
+                    self.logger.error("get gitee repo list failed, status_code: %s, please check the token.", res.status_code)
                     return
                 self.repos = res.json()
             # if repo is not exist, create it
             if self.repo_name not in [repo["name"] for repo in self.repos]:
                 self.logger.info("create repo: %s", self.repo_name)
-                self.sess.post("https://api.github.com/user/repos", json={"name": self.repo_name})
+                self.sess.post("https://api.gitee.com/user/repos", json={"name": self.repo_name})
             # git push it
             os.chdir(self.user_name+"/"+self.repo_name)
             os.system("git remote add origin2 "+self.repo_url)

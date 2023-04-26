@@ -12,9 +12,11 @@ import time
 import json
 import logging
 import argparse
+from repo_sync.base_repo import BaseRepo
+from repo_sync.gitlab_repo import GitlabRepo
 from repo_sync.coding_repo import CodingRepo
 from repo_sync.github_repo import GitHubRepo
-from repo_sync.github_repo import Coding
+from repo_sync.gitee_repo import GiteeRepo
 
 class SyncUtils:
     '''
@@ -31,7 +33,7 @@ class SyncUtils:
         run repo
         '''
         repos= []
-        with open("repos.text", "r") as f:
+        with open("data/repo.txt", "r") as f:
             repos = f.readlines()
         for repo in repos:
             repo_name = repo.split("/")[-1].replace(".git","")
@@ -41,21 +43,24 @@ class SyncUtils:
 
             if not os.path.exists(os.path.join(user_name,repo_name)):
                 self.logger.info("clone repo: %s", repo_name)
-                os.system("git clone %s" % repo_name)
+                os.system("git clone %s %s" % (repo.strip(), os.path.join(user_name,repo_name)))
 
-            self.logger.info("sync repo: %s", repo_name)
-            repoModel = None
+            repoModel:BaseRepo = None
             if self.args.type == "github":
                 repoModel = GitHubRepo(user_name, repo_name, self.logger)
             elif self.args.type == "coding":
                 repoModel = CodingRepo(user_name, repo_name)
+            elif self.args.type == "gitlab":
+                repoModel = GitlabRepo(user_name, repo_name)
+            elif self.args.type == "gitee":
+                repoModel = GiteeRepo(user_name, repo_name)
             repoModel.sync()
 
     def init_logger(self, debug:bool):
         '''
         init logger
         '''
-        self.logger = logging.getLogger(self.repo_name)
+        self.logger = logging.getLogger(__name__)
         if debug:
             self.logger.setLevel(logging.DEBUG)
         else:
