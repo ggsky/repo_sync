@@ -25,3 +25,14 @@ python repo_sync.py --debug true --repo data/repo.txt --type github
 ```
 python repo_sync.py --type gitlab
 ```
+
+## 计划任务
+
+1、项目以 zhizhou/github 作为项目源，同步到其他平台。
+2、同步项目最好每月定时执行一次，以防止代码丢失。
+
+```bash
+vim /etc/crontab
+
+0 0 1 * * python repo_sync.py --type github
+```

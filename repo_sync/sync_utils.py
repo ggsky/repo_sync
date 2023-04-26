@@ -34,7 +34,7 @@ class SyncUtils:
         with open("repos.text", "r") as f:
             repos = f.readlines()
         for repo in repos:
-            repo_name = repo.split("/")[-1]
+            repo_name = repo.split("/")[-1].replace(".git","")
             user_name=repo.split("/")[-2]
             if not os.path.exists(user_name):
                 os.mkdir(user_name)
