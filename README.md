@@ -11,6 +11,11 @@
 
 ## Usage
 
+* 1、pc配置 github clone 权限
+* 2、conf/config.json 中配置 github token 创建项目权限
+* 3、data/repo.txt 中配置需要同步的项目
+* 4、执行同步脚本：
+
 比如把 data/repo.txt 中的项目同步到 github 上：
 ```
 python repo_sync.py --debug true --repo data/repo.txt --type github
