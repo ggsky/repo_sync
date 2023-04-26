@@ -1,6 +1,19 @@
-token:
-  github: xx1
-  gitlab: xx2
-  coding: xx3
-  gitee: xx4
+zhizhou:
+  token: xx1
+  user: lyq
 
+github:
+  token: xx1
+  user: jianboy
+
+coding:
+  token: xx2
+  user: heavyrain/python-note
+
+gitlab:
+  token: xx3
+  user: jianboy
+
+gitee:
+  token: xx4
+  user: jianboy

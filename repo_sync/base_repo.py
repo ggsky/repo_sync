@@ -12,13 +12,12 @@ class BaseRepo(object):
     '''
     Repo class
     '''
-    def __init__(self, repo_name, repo_url, repo_branch, repo_path, repo_type, debug=False):
+    def __init__(self, user_name, repo_name, logger, debug=False):
         self.sess= requests.Session()
+        self.user_name= user_name
         self.repo_name = repo_name
-        self.repo_url = repo_url
-        self.repo_branch = repo_branch
-        self.repo_path = repo_path
-        self.repo_type = repo_type
+        self.repo_url = "https://github.com"
+        self.logger = logger
 
     def sync(self):
         '''

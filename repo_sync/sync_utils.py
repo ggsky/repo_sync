@@ -34,18 +34,22 @@ class SyncUtils:
         with open("repos.text", "r") as f:
             repos = f.readlines()
         for repo in repos:
-            
-            if not os.path.exists(repo):
-                self.logger.info("clone repo: %s", repo["name"])
-                os.system("git clone %s" % repo["url"])
+            repo_name = repo.split("/")[-1]
+            user_name=repo.split("/")[-2]
+            if not os.path.exists(user_name):
+                os.mkdir(user_name)
 
-            self.logger.info("sync repo: %s", repo["name"])
-            repo = None
+            if not os.path.exists(os.path.join(user_name,repo_name)):
+                self.logger.info("clone repo: %s", repo_name)
+                os.system("git clone %s" % repo_name)
+
+            self.logger.info("sync repo: %s", repo_name)
+            repoModel = None
             if self.args.type == "github":
-                repo = GitHubRepo(self.args.repository, "", "", "", "")
+                repoModel = GitHubRepo(user_name, repo_name, self.logger)
             elif self.args.type == "coding":
-                repo = CodingRepo(self.args.repository, "", "", "", "")
-            repo.sync()
+                repoModel = CodingRepo(user_name, repo_name)
+            repoModel.sync()
 
     def init_logger(self, debug:bool):
         '''
