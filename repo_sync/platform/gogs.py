@@ -7,7 +7,7 @@
 @Desc    :   
 """
 from .base_platform import BasePlatform
-import csv, re
+import csv, re, subprocess
 import json, os
 
 
@@ -16,9 +16,9 @@ class GogsIE(BasePlatform):
 
     gityoqi_repo_list = 'gityoqi_repo_list.csv'
 
-    def __init__(self, username:str, token:str,host:str =None ,params: dict = None) -> None:
+    def __init__(self, username:str, token:str, host:str =None ,params: dict = None) -> None:
         super().__init__(username=username,token=token)
-        self._host = 'https://git.yoqi.me' if self.host is None else self.host
+        self._host = 'https://git.yoqi.me' if host is None else host
 
     def create_org_repo(self, org_name: str, repo_name: str):
         """create org repo"""
@@ -100,7 +100,9 @@ class GogsIE(BasePlatform):
         os.system(
             f'git remote add origin_gogs https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git'
         )
-        os.system('git pull -u origin_gogs')
+        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        current_branch = result.stdout.strip()
+        os.system(f'git pull origin_gogs {current_branch}')
         os.system('git remote remove origin_gogs')
         os.chdir('..')
     

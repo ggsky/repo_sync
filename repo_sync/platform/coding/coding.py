@@ -9,7 +9,7 @@
 两种授权： token 授权，OAuth2.0 授权
 
 """
-import os
+import os,subprocess
 from repo_sync.platform.base_platform import BasePlatform
 from .project import Project
 from .repo import Repo
@@ -179,7 +179,10 @@ class CodingIE(BasePlatform):
         os.system(
             f'git remote add origin_coding https://{self.username}:{self.token}@e.coding.net/{self.username}/{self.project_name}/{repo_name}.git'
         )
-        os.system('git pull origin_coding')
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        current_branch = result.stdout.strip()
+        os.system(f'git pull origin_gogs {current_branch}')
         os.system('git remote remove origin_coding')
         os.chdir('..')
         print('pull success')

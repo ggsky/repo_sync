@@ -8,7 +8,7 @@
 """
 import os
 import json,re 
-import csv
+import csv, subprocess
 from .base_platform import BasePlatform
 from repo_sync.repo import Repo
 
@@ -98,7 +98,9 @@ class GitlabIE(BasePlatform):
         os.system(
             f"git remote add origin_gitlab https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git"
         )
-        os.system("git pull -u origin_gitlab")
+        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        current_branch = result.stdout.strip()
+        os.system(f'git pull origin_gogs {current_branch}')
         os.system("git remote remove origin_gitlab")
         os.chdir("..")
         print(f"pull repo:{self.username}/{repo_name} from gitlab success")

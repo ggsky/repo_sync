@@ -8,7 +8,7 @@
 
 """
 from .base_platform import BasePlatform
-import csv
+import csv, subprocess
 import os
 from repo_sync.repo import Repo
 
@@ -18,7 +18,7 @@ class GiteeIE(BasePlatform):
     _host = 'https://gitee.com'
     _api = _host + '/api/v5'
 
-    def __init__(self, username:str, token:str,host:str =None ,params: dict = None) -> None:
+    def __init__(self, username:str, token:str,host:str =None, params: dict = None) -> None:
         super().__init__(username=username, token=token)
         self.sess.headers.update({'Content-Type': 'multipart/form-data'})
 
@@ -81,7 +81,9 @@ class GiteeIE(BasePlatform):
         os.system(
             f'git remote add origin_gitee https://{self.username}:{self.token}@gitee.com/{self.username}/{repo_name}.git'
         )
-        os.system('git pull origin_gitee')
+        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        current_branch = result.stdout.strip()
+        os.system(f'git pull origin_gogs {current_branch}')
         os.system('git remote remove origin_gitee')
         os.chdir('..')
         print('pull from gitee success')
