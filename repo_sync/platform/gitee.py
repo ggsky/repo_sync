@@ -98,6 +98,10 @@ class GiteeIE(BasePlatform):
         os.system(
             f'git remote add origin_gitee https://{self.username}:{self.token}@gitee.com/{self.username}/{repo_name}.git'
         )
+        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        current_branch = result.stdout.strip()
+        os.system(f'git pull origin_gogs {current_branch}')
+        
         os.system('git push -u origin_gitee')
         os.system('git remote remove origin_gitee')
         os.chdir('..')
