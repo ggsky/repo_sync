@@ -1,6 +1,20 @@
-from repo_sync.base_repo import BaseRepo
-from repo_sync.sync_utils import SyncUtils
+from .repo_sync import RepoSync
+from .version import __version__
+from .options import parser_args
+import sys
 
-def main():
-    sync_utils = SyncUtils()
-    sync_utils.run()
+def main(argv=None):
+    """Main entry point of the program"""
+    try:
+        args = parser_args()
+        if args.get('version'):
+            print(__version__)
+            sys.exit(0)
+        if args.get('command', '') == '':
+            # logging.error("command is empty")
+            # argparser.print_help()
+            sys.exit(1)
+        rs = RepoSync(args)
+        rs.run()
+    except KeyboardInterrupt:
+        sys.exit('\nERROR: Interrupted by user')

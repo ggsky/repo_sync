@@ -21,9 +21,8 @@
 python repo_sync.py --debug true --repo data/repo.txt --type github
 ```
 
-把 data/repo.txt 中的项目同步到 gitlab 上：
 ```
-python repo_sync.py --type gitlab
+python main.py pull --platform coding --repo_path F:\workspace\python\crawl_github
 ```
 
 ## 计划任务

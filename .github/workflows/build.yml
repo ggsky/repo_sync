@@ -1,0 +1,53 @@
+name: Publish Installers
+
+on:
+  workflow_dispatch: ~
+  push:
+    branches: [master]
+    tags: [v*]
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }} Package
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix: 
+        os: [windows-2019, ubuntu-20.04]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Release Version
+        id: get_version
+        shell: bash
+        run: |
+          echo "::set-output name=hash::$(git rev-parse --short HEAD)"
+          echo "::set-output name=date::$(date +%Y%m%d)"
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: pip
+          cache-dependency-path: '**/requirements*.txt'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Build Package
+        run: |
+          python -m PyInstaller -F -c  -i favicon.ico --name repo_sync main.py
+
+      - name: Update to ali oss
+        uses: yizhoumo/setup-ossutil@v1
+        with:
+          endpoint: oss-cn-qingdao.aliyuncs.com
+          access-key-id: ${{ secrets.OSS_KEY_ID }}
+          access-key-secret: ${{ secrets.OSS_KEY_SECRET }}
+          
+      - name: cp files to aliyun
+        run: |
+          ossutil cp -rf dist/ oss://yoqi-software/develop/repo_sync/${{ steps.get_version.outputs.date }}-${{ steps.get_version.outputs.hash }}/
