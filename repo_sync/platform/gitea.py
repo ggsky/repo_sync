@@ -24,10 +24,10 @@ class GiteaIE(object):
 
     def clone(self):
         pass
-    def push(self):
+    def push(self, local_repo_path: str):
         pass
-    def pull(self, repo_path: str):
-        return super().pull(repo_path)
+    def pull(self, local_repo_path: str):
+        return super().pull(local_repo_path)
     
     @classmethod
     def suitable(cls, extractor: str) -> bool:

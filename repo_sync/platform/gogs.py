@@ -87,9 +87,26 @@ class GogsIE(BasePlatform):
         pass
     
     def pull(self, local_repo_path: str):
-        pass
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
+        repo_name = local_repo_path.split(os.path.sep)[-1]
+        print(f'pull repo:{self.username}/{repo_name} from {self._host}')
+        self.create_repo(repo_name)
+
+        pur_host = re.search(r'(?<=//)[^/]+', self._host).group()
+
+        os.chdir(local_repo_path)
+        os.system('git remote remove origin_gogs')
+        os.system(
+            f'git remote add origin_gogs https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git'
+        )
+        os.system('git pull -u origin_gogs')
+        os.system('git remote remove origin_gogs')
+        os.chdir('..')
     
     def push(self, local_repo_path: str):
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'push repo:{self.username}/{repo_name} to {self._host}')
         self.create_repo(repo_name)

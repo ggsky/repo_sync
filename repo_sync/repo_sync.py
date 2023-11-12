@@ -84,8 +84,6 @@ class RepoSync(object):
             token = self.params.get(f'{platform}_token', None)
             host = self.params.get(f'{platform}_host', None)
 
-            if command == 'create':
-                return
             if command == 'clone':
                 # current_platform(username, token, host = host).clone(name)
                 return
@@ -95,8 +93,10 @@ class RepoSync(object):
                     for row in reader:
                         repo = Repo()
                         repo.__dict__ = row
+                        if command == 'create':
+                            current_platform(username,token, host, self.params).create_repo(repo.name)
                         if command == 'push':
-                            current_platform(username,token,host, self.params).push(repo.local_path)
+                            current_platform(username,token, host, self.params).push(repo.local_path)
                         elif command == 'delete':
                             current_platform(username,token, host, self.params).delete(repo.name)
                         elif command =='pull':

@@ -172,7 +172,10 @@ class CodingIE(BasePlatform):
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'pull repo:{self.username}/{repo_name} from coding')
         os.chdir(local_repo_path)
-        os.system('git remote remove origin_coding')
+        try:
+            os.system('git remote remove origin_coding')
+        except Exception as e:
+            pass
         os.system(
             f'git remote add origin_coding https://{self.username}:{self.token}@e.coding.net/{self.username}/{self.project_name}/{repo_name}.git'
         )

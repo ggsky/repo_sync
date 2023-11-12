@@ -80,14 +80,36 @@ class GitlabIE(BasePlatform):
         self.save_csv()
         return repo_list
 
-    def pull(self):
-        pass
+    def pull(self, local_repo_path: str):
+        """push a local repo to remote
+        Args:
+            local_repo_path (str): local repo path
+        """
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
+        repo_name = local_repo_path.split(os.path.sep)[-1]
+        print(f"push repo:{self.username}/{repo_name} to gitlab")
+        self.create_repo(repo_name)
+        pur_host = re.search(r'(?<=//)[^/]+', self.host).group()
+
+        os.chdir(local_repo_path)
+
+        os.system("git remote remove origin_gitlab")
+        os.system(
+            f"git remote add origin_gitlab https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git"
+        )
+        os.system("git pull -u origin_gitlab")
+        os.system("git remote remove origin_gitlab")
+        os.chdir("..")
+        print(f"pull repo:{self.username}/{repo_name} from gitlab success")
 
     def push(self, local_repo_path: str):
         """push a local repo to remote
         Args:
             local_repo_path (str): local repo path
         """
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f"push repo:{self.username}/{repo_name} to gitlab")
         self.create_repo(repo_name)
@@ -102,7 +124,8 @@ class GitlabIE(BasePlatform):
         os.system("git push -u origin_gitlab")
         os.system("git remote remove origin_gitlab")
         os.chdir("..")
-
+        print(f"push repo:{self.username}/{repo_name} to gitlab success")
+        
     def clone(self):
         pass
 

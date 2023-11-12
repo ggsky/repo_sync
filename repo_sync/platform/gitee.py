@@ -23,7 +23,7 @@ class GiteeIE(BasePlatform):
         self.sess.headers.update({'Content-Type': 'multipart/form-data'})
 
     def create_repo(self, repo_name: str):
-        """create a repo"""
+        """create a repo"""        
         url = f'{self._api}/user/repos'
         form_data = {'name': repo_name, 'private': True}
         r = self.sess.post(url, params=form_data)
@@ -72,22 +72,25 @@ class GiteeIE(BasePlatform):
         pass
     
     def pull(self, local_repo_path: str):
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'pull repo:{self.username}/{repo_name} from gitee')
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gitee')
         os.system(
-            f'git remote add origin_gitee https://gitee.com/{self.username}/{repo_name}.git'
+            f'git remote add origin_gitee https://{self.username}:{self.token}@gitee.com/{self.username}/{repo_name}.git'
         )
         os.system('git pull origin_gitee')
         os.system('git remote remove origin_gitee')
         os.chdir('..')
+        print('pull from gitee success')
                  
     def push(self, local_repo_path: str):
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'push repo:{self.username}/{repo_name} to gitee')
-        # if not self.repo_exists(repo_name):
-        self.create_repo(repo_name)
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gitee')
         os.system(
@@ -96,6 +99,7 @@ class GiteeIE(BasePlatform):
         os.system('git push -u origin_gitee')
         os.system('git remote remove origin_gitee')
         os.chdir('..')
+        print('push to gitee success')
 
     @classmethod
     def suitable(cls, extractor: str) -> bool:

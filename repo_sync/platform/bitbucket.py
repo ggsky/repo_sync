@@ -33,8 +33,8 @@ class BitbucketIE(BasePlatform):
 
     def clone(self):
         pass
-    def pull(self, repo_path: str):
-        return super().pull(repo_path)
+    def pull(self, local_repo_path: str):
+        return super().pull(local_repo_path)
     
 
     def push(self):

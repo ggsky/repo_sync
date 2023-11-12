@@ -54,6 +54,7 @@ class GithubIE(BasePlatform):
             print(
                 f'Failed to delete repository: {repo_name} from github. Error {response.status_code}: {response.text}'
             )
+        print(f'delete repo:{repo_name} from github success')
 
     def repo_exists(self, repo_name: str):
         """check if a repo exists"""
@@ -66,22 +67,30 @@ class GithubIE(BasePlatform):
         except Exception as e:
             return False
 
-    def pull(self, repo_path: str):
+    def pull(self, local_repo_path: str):
         """pull a repo"""
-        repo_name = repo_path.split(os.path.sep)[-1]
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
+        repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'pull repo:{self.username}/{repo_name} from github')
         if not self.repo_exists(repo_name):
             self.create_repo(repo_name)
-        os.chdir(repo_path)
+        os.chdir(local_repo_path)
         os.system('git remote remove origin_github')
         os.system(
-            f'git remote add origin_github')
+            f'git remote add origin_github  https://{self.username}:{self.token}@github.com/{self.username}/{repo_name}.git')
+        os.system('git pull origin_github')
+        os.system('git remote remove origin_github')
+        os.chdir('..')
+        print('pull from github success')
 
     def clone(self, repo_name: str):
         pass
     
     def push(self, local_repo_path: str):
         """push a local repo to remote"""
+        if local_repo_path[-1] == os.path.sep:
+            local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'push repo:{self.username}/{repo_name} to github')
         if not self.repo_exists(repo_name):
