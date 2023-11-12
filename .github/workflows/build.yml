@@ -50,7 +50,7 @@ jobs:
           
       - name: cp files to aliyun
         run: |
-          ossutil cp -rf dist/ oss://yoqi-software/develop/repo_sync/${{ steps.get_version.outputs.date }}-${{ steps.get_version.outputs.hash }}/
+          ossutil cp -r dist/ oss://yoqi-software/develop/repo_sync/${{ steps.get_version.outputs.date }}-${{ steps.get_version.outputs.hash }}/
       
       - uses: leafney/dingtalk-action@v1
         if: always()
