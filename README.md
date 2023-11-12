@@ -21,28 +21,6 @@
 python repo_sync.py --debug true --repo data/repo.txt --type github
 ```
 
-```
-python main.py create --platform coding --repo_path F:\workspace\python\crawl_github
-python main.py pull --platform coding --repo_path F:\workspace\python\crawl_github
-python main.py push --platform coding --repo_path F:\workspace\python\crawl_github
-python main.py delete --platform coding --repo_path F:\workspace\python\crawl_github
-
-python main.py create --platform github --repo_path F:\workspace\python\crawl_github
-python main.py pull --platform github --repo_path F:\workspace\python\crawl_github
-python main.py push --platform github --repo_path F:\workspace\python\crawl_github
-python main.py delete --platform github --repo_path F:\workspace\python\crawl_github
-
-python main.py create --platform gitee --repo_path F:\workspace\python\crawl_github
-python main.py pull --platform gitee --repo_path F:\workspace\python\crawl_github
-python main.py push --platform gitee --repo_path F:\workspace\python\crawl_github
-python main.py delete --platform gitee --repo_path F:\workspace\python\crawl_github
-
-python main.py create --platform github --repo_path F:\workspace\python\crawl_github
-python main.py pull --platform github --repo_path F:\workspace\python\crawl_github
-python main.py push --platform github --repo_path F:\workspace\python\crawl_github
-python main.py delete --platform github --repo_path F:\workspace\python\crawl_github
-
-```
 
 ## 计划任务
 
