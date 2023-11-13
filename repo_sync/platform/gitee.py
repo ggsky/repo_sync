@@ -83,7 +83,7 @@ class GiteeIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
+        os.system(f'git pull origin_gitee {current_branch}')
         os.system('git remote remove origin_gitee')
         os.chdir('..')
         print('pull from gitee success')
@@ -100,7 +100,7 @@ class GiteeIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
+        os.system(f'git pull origin_gitee {current_branch}')
         
         os.system('git push -u origin_gitee')
         os.system('git remote remove origin_gitee')

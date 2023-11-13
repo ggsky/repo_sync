@@ -73,8 +73,7 @@ class GithubIE(BasePlatform):
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'pull repo:{self.username}/{repo_name} from github')
-        if not self.repo_exists(repo_name):
-            self.create_repo(repo_name)
+        
         os.chdir(local_repo_path)
         os.system('git remote remove origin_github')
         os.system(
@@ -82,7 +81,7 @@ class GithubIE(BasePlatform):
         result = subprocess.run(
             ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
+        os.system(f'git pull origin_github {current_branch}')
         os.system('git remote remove origin_github')
         os.chdir('..')
         print('pull from github success')
@@ -106,7 +105,7 @@ class GithubIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
+        os.system(f'git pull origin_github {current_branch}')
         
         os.system('git push -u origin_github')
         os.system('git remote remove origin_github')

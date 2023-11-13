@@ -182,7 +182,7 @@ class CodingIE(BasePlatform):
         result = subprocess.run(
             ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
+        os.system(f'git pull origin_coding {current_branch}')
         os.system('git remote remove origin_coding')
         os.chdir('..')
         print('pull success')
@@ -203,7 +203,7 @@ class CodingIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
+        os.system(f'git pull origin_coding {current_branch}')
         
         os.system('git push -u origin_coding')
         os.system('git remote remove origin_coding')

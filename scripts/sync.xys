@@ -7,7 +7,7 @@ $InitialPath = "<curpath>";
         $ok=gettoken($a, "3", "&");
                 $operation=gettoken($operation1,2,"=");
                 $platform=gettoken($platform1,2,"=");
-                text runret("F:\dist\Develop\Python\crawl_github\dist\repo_sync.exe $operation --platform $platform --repo_path <curpath>","F:\dist\Develop\Python\crawl_github\dist\")
+                run "cmd /k cd /d F:\dist\Develop\Python\crawl_github\dist && repo_sync $operation --platform $platform --repo_path <curpath>"
 "_Cancel"
 //   msg "Cancled by user";   
 	sub "_EOF";  
