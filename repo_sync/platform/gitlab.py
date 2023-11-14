@@ -15,7 +15,7 @@ from repo_sync.repo import Repo
 class GitlabIE(BasePlatform):
     """gitlab async"""
 
-    def __init__(self, username:str, token:str,host:str =None ,params: dict = None) -> None:
+    def __init__(self, username:str, token:str, host:str =None, params: dict = None) -> None:
         super().__init__(username=username, token=token)
         self.host = self.host or 'https://gitlab.com'
         self.sess.headers.update({"Authorization": f"Bearer {self.token}"})
@@ -100,7 +100,7 @@ class GitlabIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gitlab {current_branch}')
+        os.system(f'git pull -u origin_gitlab {current_branch}')
         os.system("git remote remove origin_gitlab")
         os.chdir("..")
         print(f"pull repo:{self.username}/{repo_name} from gitlab success")
@@ -125,9 +125,9 @@ class GitlabIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gitlab {current_branch}')
+        os.system(f'git pull -u origin_gitlab {current_branch}')
         
-        os.system("git push -u origin_gitlab")
+        os.system(f"git push -u origin_gitlab {current_branch}")
         os.system("git remote remove origin_gitlab")
         os.chdir("..")
         print(f"push repo:{self.username}/{repo_name} to gitlab success")

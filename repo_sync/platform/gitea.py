@@ -11,7 +11,7 @@
 class GiteaIE(object):
     def __init__(self, username:str, token:str, host:str =None ,params: dict = None) -> None:
         super().__init__(username=username,token=token)
-        self._host = 'https://git.yoqi.me' if host is None else host
+        self._host = 'https://gitea.com' if host is None else host
 
     def create_repo(self, repo_name: str):
         pass
@@ -24,8 +24,10 @@ class GiteaIE(object):
 
     def clone(self):
         pass
+
     def push(self, local_repo_path: str):
         pass
+        
     def pull(self, local_repo_path: str):
         return super().pull(local_repo_path)
     

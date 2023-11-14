@@ -100,7 +100,7 @@ class GogsIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
+        os.system(f'git pull -u origin_gogs {current_branch}')
         os.system('git remote remove origin_gogs')
         os.chdir('..')
     
@@ -119,8 +119,8 @@ class GogsIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull origin_gogs {current_branch}')
-        os.system('git push -u origin_gogs')
+        os.system(f'git pull -u origin_gogs {current_branch}')
+        os.system(f'git push -u origin_gogs {current_branch}')
         os.system('git remote remove origin_gogs')
         os.chdir('..')
 
