@@ -81,7 +81,7 @@ class GithubIE(BasePlatform):
         result = subprocess.run(
             ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull -u origin_github {current_branch}')
+        os.system(f'git pull origin_github {current_branch}')
         os.system('git remote remove origin_github')
         os.chdir('..')
         print('pull from github success')
@@ -105,7 +105,7 @@ class GithubIE(BasePlatform):
         )
         result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
         current_branch = result.stdout.strip()
-        os.system(f'git pull -u origin_github {current_branch}')
+        os.system(f'git pull origin_github {current_branch}')
         
         os.system(f'git push -u origin_github {current_branch}')
         os.system('git remote remove origin_github')
