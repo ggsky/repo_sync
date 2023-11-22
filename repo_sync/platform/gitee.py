@@ -21,11 +21,15 @@ class GiteeIE(BasePlatform):
     def __init__(self, username:str, token:str,host:str =None, params: dict = None) -> None:
         super().__init__(username=username, token=token)
         self.sess.headers.update({'Content-Type': 'multipart/form-data'})
+        self.repo_private = True if params.get('gitee_private', "true").lower()  == 'true' else False
 
     def create_repo(self, repo_name: str):
         """create a repo"""        
         url = f'{self._api}/user/repos'
-        form_data = {'name': repo_name, 'private': True}
+        form_data = {
+        'name': repo_name, 
+        'private': self.repo_private,
+        }
         r = self.sess.post(url, params=form_data)
         if r.status_code != 201:
             print(

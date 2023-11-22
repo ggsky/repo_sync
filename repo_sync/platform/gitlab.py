@@ -17,8 +17,9 @@ class GitlabIE(BasePlatform):
 
     def __init__(self, username:str, token:str, host:str =None, params: dict = None) -> None:
         super().__init__(username=username, token=token)
-        self.host = self.host or 'https://gitlab.com'
+        self.host = host or 'https://gitlab.com'
         self.sess.headers.update({"Authorization": f"Bearer {self.token}"})
+        self.repo_private = 'private' if params.get('gitlab_private', "true").lower()  == 'true' else 'public'
 
     def create_repo(self, repo_name: str):
         """create a repo
@@ -27,7 +28,7 @@ class GitlabIE(BasePlatform):
         url = f"{self.host}/api/v4/projects"
         payload = {
             "name": repo_name,
-            "visibility": "private",
+            "visibility": self.repo_private,
         }
         r = self.sess.post(url, data=json.dumps(payload))
         if r.status_code != 201:

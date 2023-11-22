@@ -23,13 +23,14 @@ class GithubIE(BasePlatform):
         # 60 unauthenticated requests per hour
         if self.token:
             self.sess.headers.update({'Accept': 'application/vnd.github.v3+json'})
+        self.repo_private = True if params.get('gitlab_private', "true").lower()  == 'true' else False
 
     def create_repo(self, repo_name: str):
         """create a repo"""
         url = f'{self._host}/user/repos'
         payload = {
             'name': repo_name,
-            'private': True,
+            'private': self.repo_private,
             'has_issues': True,
             'has_projects': False,
             'has_wiki': False,
