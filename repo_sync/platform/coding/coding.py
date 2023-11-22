@@ -24,6 +24,7 @@ class CodingIE(BasePlatform):
         """init"""
         super().__init__(username , token)
         self.project_name = params.get('coding_project', '')
+        self.repo_private = True if params.get('coding_private', "true").lower()  == 'true' else False
 
     def create_project(self):
         ''' createt a project '''
@@ -135,11 +136,11 @@ class CodingIE(BasePlatform):
 
         url = f'{self._host}/open-api/repos'
         data = {
-            "Action": "CreateGitDepot",
-            "ProjectId": project.Id,
-            "DepotName": repo_name,
-            "Shared": False,
-            "Description": ""
+                "Action": "CreateGitDepot",
+                "ProjectId": project.Id, 
+                "DepotName": repo_name,
+                "Shared": self.repo_private,
+                "Description": "this is your first depot"
             }
         r = self.sess.post(url, json=data)
         if r.status_code == 200:

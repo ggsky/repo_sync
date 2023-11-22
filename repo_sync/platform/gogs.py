@@ -19,6 +19,7 @@ class GogsIE(BasePlatform):
     def __init__(self, username:str, token:str, host:str =None ,params: dict = None) -> None:
         super().__init__(username=username,token=token)
         self._host = 'https://git.yoqi.me' if host is None else host
+        self.repo_private = True if params.get('gogs_private', "true").lower()  == 'true' else False
 
     def create_org_repo(self, org_name: str, repo_name: str):
         """create org repo"""
@@ -26,7 +27,7 @@ class GogsIE(BasePlatform):
         payload = {
             'name': repo_name,
             'description': 'This is your first repository',
-            'private': True,
+            'private': self.repo_private,
             'auto_init': True,
             'gitignores': 'Go',
             'license': 'Apache v2 License',
