@@ -8,27 +8,24 @@
 * gitlab
 * gitee
 * coding
+* gitea,gogs
+
 
 ## Usage
 
-* 1、pc配置 github clone 权限
-* 2、conf/config.json 中配置 github token 创建项目权限
-* 3、data/repo.txt 中配置需要同步的项目
-* 4、执行同步脚本：
+windows 下载 [release]()使用即可
 
-比如把 data/repo.txt 中的项目同步到 github 上：
+## Develop
+
 ```
-python repo_sync.py --debug true --repo data/repo.txt --type github
+python main.py --help
+python main.py create --platform gitlab --repo_path F:\workspace\python\repo_sync
 ```
 
+## License
 
-## 计划任务
+Apache License 2.0
 
-1、项目以 zhizhou/github 作为项目源，同步到其他平台。
-2、同步项目最好每月定时执行一次，以防止代码丢失。
+## Reference
 
-```bash
-vim /etc/crontab
-
-0 0 1 * * python repo_sync.py --type github
-```
+* [gitlab api](https://docs.gitlab.com/ee/api/)
