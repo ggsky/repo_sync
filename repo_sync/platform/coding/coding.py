@@ -24,7 +24,7 @@ class CodingIE(BasePlatform):
         """init"""
         super().__init__(username , token)
         self.project_name = params.get('coding_project', '')
-        self.repo_private = True if params.get('coding_private', "true").lower()  == 'true' else False
+        self.repo_shared = False if params.get('coding_private', "true").lower()  == 'true' else True
 
     def create_project(self):
         ''' createt a project '''
@@ -139,7 +139,7 @@ class CodingIE(BasePlatform):
                 "Action": "CreateGitDepot",
                 "ProjectId": project.Id, 
                 "DepotName": repo_name,
-                "Shared": self.repo_private,
+                "Shared": self.repo_shared,
                 "Description": "this is your first depot"
             }
         r = self.sess.post(url, json=data)
