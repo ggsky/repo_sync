@@ -48,7 +48,7 @@ class GiteeIE(BasePlatform):
             print(f'Repository: {repo_name} deleted from gitee successfully!')
         else:
             print(
-                f'Failed to delete repository: {repo_name} from github. Error {response.status_code}: {response.text}'
+                f'Failed to delete repository: {repo_name} from gitee. Error {response.status_code}: {response.text}'
             )
 
     def get_repo_list(self) -> list:
@@ -85,7 +85,8 @@ class GiteeIE(BasePlatform):
         os.system(
             f'git remote add origin_gitee https://{self.username}:{self.token}@gitee.com/{self.username}/{repo_name}.git'
         )
-        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_gitee {current_branch}')
         os.system('git remote remove origin_gitee')
@@ -102,7 +103,8 @@ class GiteeIE(BasePlatform):
         os.system(
             f'git remote add origin_gitee https://{self.username}:{self.token}@gitee.com/{self.username}/{repo_name}.git'
         )
-        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_gitee {current_branch}')
         
