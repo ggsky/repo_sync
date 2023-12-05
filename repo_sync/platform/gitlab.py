@@ -99,7 +99,8 @@ class GitlabIE(BasePlatform):
         os.system(
             f"git remote add origin_gitlab https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git"
         )
-        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_gitlab {current_branch}')
         os.system("git remote remove origin_gitlab")
@@ -124,7 +125,8 @@ class GitlabIE(BasePlatform):
         os.system(
             f"git remote add origin_gitlab https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git"
         )
-        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_gitlab {current_branch}')
         

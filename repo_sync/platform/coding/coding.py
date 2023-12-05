@@ -181,7 +181,7 @@ class CodingIE(BasePlatform):
             f'git remote add origin_coding https://{self.username}:{self.token}@e.coding.net/{self.username}/{self.project_name}/{repo_name}.git'
         )
         result = subprocess.run(
-            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_coding {current_branch}')
         os.system('git remote remove origin_coding')
@@ -202,7 +202,8 @@ class CodingIE(BasePlatform):
         os.system(
             f'git remote add origin_coding https://{self.username}:{self.token}@e.coding.net/{self.username}/{self.project_name}/{repo_name}.git'
         )
-        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_coding {current_branch}')
         

@@ -99,7 +99,8 @@ class GogsIE(BasePlatform):
         os.system(
             f'git remote add origin_gogs https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git'
         )
-        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_gogs {current_branch}')
         os.system('git remote remove origin_gogs')
@@ -118,7 +119,8 @@ class GogsIE(BasePlatform):
         os.system(
             f'git remote add origin_gogs https://{self.username}:{self.token}@{pur_host}/{self.username}/{repo_name}.git'
         )
-        result = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True)
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'], capture_output=True, text=True, encoding='utf-8')
         current_branch = result.stdout.strip()
         os.system(f'git pull origin_gogs {current_branch}')
         os.system(f'git push -u origin_gogs {current_branch}')
