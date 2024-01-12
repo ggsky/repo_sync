@@ -1,4 +1,8 @@
 # repo_sync
+[![](https://img.shields.io/badge/version-1.0.1-brightgreen.svg)](https://git.yoqi.me/lyq/github_notify)
+[![](https://img.shields.io/badge/Python-3.11.5-brightgreen.svg)](https://git.yoqi.me/lyq/github_notify)
+
+
 
 跨平台项目同步工具
 
