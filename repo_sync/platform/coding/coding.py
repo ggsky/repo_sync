@@ -117,17 +117,22 @@ class CodingIE(BasePlatform):
         r = self.sess.post(url, json=data)
         if r.status_code == 200:
             res_data = r.json()
-            if res_data['Response']["Data"]["TotalCount"] > 0:
-                ProjectList = res_data['Response']["Data"]["ProjectList"]
-                projet = Project(
-                    Id=ProjectList[0]['Id'],
-                    Name=ProjectList[0]['Name'],
-                    DisplayName=ProjectList[0]['DisplayName'],
-                    Description=ProjectList[0]['Description'],
-                    TeamOwnerId=ProjectList[0]['TeamOwnerId'],
-                    TeamId=ProjectList[0]['TeamId']
-                )
-                return projet
+            try:
+                if res_data['Response']["Data"]["TotalCount"] > 0:
+                    ProjectList = res_data['Response']["Data"]["ProjectList"]
+                    projet = Project(
+                        Id=ProjectList[0]['Id'],
+                        Name=ProjectList[0]['Name'],
+                        DisplayName=ProjectList[0]['DisplayName'],
+                        Description=ProjectList[0]['Description'],
+                        TeamOwnerId=ProjectList[0]['TeamOwnerId'],
+                        TeamId=ProjectList[0]['TeamId']
+                    )
+                    return projet
+            except Exception as e:
+                print(res_data)
+                print(e)
+                exit(1)
 
     def create_repo(self, repo_name: str):
         """create a repo"""
