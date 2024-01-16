@@ -88,22 +88,28 @@ class CodingIE(BasePlatform):
         r = self.sess.post(url, json=data)
         if r.status_code == 200:
             res_data = r.json()
-            if res_data['Response']["DepotData"]["Page"]["TotalRow"] > 0:
-                DepotList = res_data['Response']["DepotData"]["Depots"]
-                depot = Repo(
-                    Id=DepotList[0]['Id'],
-                    Name=DepotList[0]['Name'],
-                    HttpsUrl=DepotList[0]['HttpsUrl'],
-                    ProjectId=DepotList[0]['ProjectId'],
-                    SshUrl=DepotList[0]['SshUrl'],
-                    WebUrl=DepotList[0]['WebUrl'],
-                    ProjectName=DepotList[0]['ProjectName'],
-                    Description=DepotList[0]['Description'],
-                    CreatedAt=DepotList[0]['CreatedAt'],
-                    GroupId=DepotList[0]['GroupId'],
-                    GroupName=DepotList[0]['GroupName']
-                )
-                return depot
+            try:
+                if res_data['Response']["DepotData"]["Page"]["TotalRow"] > 0:
+                    DepotList = res_data['Response']["DepotData"]["Depots"]
+                    depot = Repo(
+                        Id=DepotList[0]['Id'],
+                        Name=DepotList[0]['Name'],
+                        HttpsUrl=DepotList[0]['HttpsUrl'],
+                        ProjectId=DepotList[0]['ProjectId'],
+                        SshUrl=DepotList[0]['SshUrl'],
+                        WebUrl=DepotList[0]['WebUrl'],
+                        ProjectName=DepotList[0]['ProjectName'],
+                        Description=DepotList[0]['Description'],
+                        CreatedAt=DepotList[0]['CreatedAt'],
+                        GroupId=DepotList[0]['GroupId'],
+                        GroupName=DepotList[0]['GroupName']
+                    )
+                    return depot
+                else:
+                    print(f'can not find repo {repo_name} in project {self.project_name}')
+                    exit(1)
+            except Exception as e:
+                raise Exception(f'can not find repo {repo_name} in project {self.project_name}')
 
     def get_project_info(self)->Project:
         url = f'{self._host}/open-api'
