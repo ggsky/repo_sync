@@ -1,5 +1,5 @@
 # repo_sync
-[![](https://img.shields.io/badge/version-1.0.1-brightgreen.svg)](https://git.yoqi.me/lyq/repo_sync)
+[![](https://img.shields.io/badge/version-1.3.0-brightgreen.svg)](https://git.yoqi.me/lyq/repo_sync)
 [![](https://img.shields.io/badge/Python-3.11.5-brightgreen.svg)](https://git.yoqi.me/lyq/repo_sync)
 
 
