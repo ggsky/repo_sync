@@ -6,7 +6,7 @@
 @License :   Copyright © 2017-2022 liuyuqi. All Rights Reserved.
 @Desc    :   sync utils
 '''
-import os,csv
+import os,csv,re
 import logging
 from .platform import gen_extractor_classes
 from .repo import Repo
@@ -29,6 +29,7 @@ class RepoSync(object):
         for p in gen_extractor_classes():
             self.platforms.append(p)
         if params.get('repo_path', None) is not None:
+            self.repo_path = params.get('repo_path', None)
             self.get_local_repo_list(params.get('repo_path', None))
     
     def get_local_repo_list(self, repo_path):
@@ -85,7 +86,7 @@ class RepoSync(object):
             host = self.params.get(f'{platform}_host', None)
 
             if command == 'clone':
-                # current_platform(username, token, host = host).clone(name)
+                current_platform(username, token, host, self.params).clone(self.repo_path)
                 return
             if os.path.exists(self.repo_list_path):
                 with open(self.repo_list_path, 'r', encoding='utf8') as f:

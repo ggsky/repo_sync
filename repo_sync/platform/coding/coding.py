@@ -20,7 +20,7 @@ class CodingIE(BasePlatform):
     client_serect = ''
     _host = 'https://e.coding.net'  # 新版接口统一地址
 
-    def __init__(self, username:str, token:str,host:str =None ,params: dict = None) -> None:
+    def __init__(self, username:str, token:str, host:str =None , params: dict = None) -> None:
         """init"""
         super().__init__(username , token)
         self.project_name = params.get('coding_project', '')
@@ -63,18 +63,80 @@ class CodingIE(BasePlatform):
     def get_project_list(self):
         pass
 
-    def get_repo_list(self, username: str):
-        """get repo list"""
+    def get_repo_list(self, username: str = None) -> list:
+        """ get repo list  from a project
+            Args: username: the target username may not self.username
+            return: repo list
+        """
         url = f'{self._host}/open-api'
         data = {
             'Action': 'DescribeTeamDepotInfoList',
-            'ProjectName': '',
-            'DepotName': '',
+            'ProjectName': self.project_name,
             'PageNumber': 1,
             'PageSize': 50
         }
         r = self.sess.post(url, json=data)
     
+        if r.status_code == 200:
+            res_data = r.json()
+            try:
+                totalPage = res_data['Response']["DepotData"]["Page"]["TotalPage"]
+                if totalPage > 0:
+                    currentPage = 1
+                    DepotList = []
+                    # the first page
+                    DepotList = res_data['Response']["DepotData"]["Depots"]
+                    repo_model = Repo(
+                        Id=DepotList[0]['Id'],
+                        Name=DepotList[0]['Name'],
+                        HttpsUrl=DepotList[0]['HttpsUrl'],
+                        ProjectId=DepotList[0]['ProjectId'],
+                        SshUrl=DepotList[0]['SshUrl'],
+                        WebUrl=DepotList[0]['WebUrl'],
+                        ProjectName=DepotList[0]['ProjectName'],
+                        Description=DepotList[0]['Description'],
+                        CreatedAt=DepotList[0]['CreatedAt'],
+                        GroupId=DepotList[0]['GroupId'],
+                        GroupName=DepotList[0]['GroupName']
+                    )
+                    DepotList.append(repo_model)
+                    
+                    currentPage += 1
+                    # the other pages
+                    for i in range(2, totalPage + 1):
+                        data = {
+                            'Action': 'DescribeTeamDepotInfoList',
+                            'ProjectName': self.project_name,
+                            'PageNumber': currentPage,
+                            'PageSize': 50
+                        }
+                        r = self.sess.post(url, json=data)
+                        res_data = r.json()
+
+                        DepotList = res_data['Response']["DepotData"]["Depots"]
+                        for repo in DepotList:
+                            repo_model= Repo(
+                                Id=repo['Id'],
+                                Name=repo['Name'],
+                                HttpsUrl=repo['HttpsUrl'],
+                                ProjectId=repo['ProjectId'],
+                                SshUrl=repo['SshUrl'],
+                                WebUrl=repo['WebUrl'],
+                                ProjectName=repo['ProjectName'],
+                                Description=repo['Description'],
+                                CreatedAt=repo['CreatedAt'],
+                                GroupId=repo['GroupId'],
+                                GroupName=repo['GroupName']
+                            )
+                            DepotList.append(repo_model)
+                        currentPage += 1
+                    return DepotList
+                else:
+                    print(f'can not find repo in project {self.project_name}')
+                    exit(1)
+            except Exception as e:
+                raise Exception(e)
+        
     def get_repo_info(self, repo_name: str):
         """get repo list"""
         url = f'{self._host}/open-api'
@@ -223,8 +285,19 @@ class CodingIE(BasePlatform):
         os.chdir('..')
         print('push success')
 
-    def clone(self, repo_name: str):
-        pass
+    def clone(self, repo_path: str):
+        ''' clone all repo from remote
+            Args: repo_name: repo name
+         '''
+        repos = self.get_repo_list()
+        for repo in repos:
+            try:
+                cmd = f'git clone https://{self.username}:{self.token}@e.coding.net/{self.username}/{self.project_name}/{repo["Name"]}.git {repo_path}/{repo["Name"]}'
+                # print(cmd)
+                os.system(cmd)
+                print(f'clone repo:{repo["Name"]} success')
+            except Exception as e:
+                pass
 
     @classmethod
     def suitable(cls, extractor: str) -> bool:

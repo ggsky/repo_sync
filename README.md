@@ -24,6 +24,9 @@ windows 下载 [release]()使用即可
 ```
 python main.py --help
 python main.py create --platform gitlab --repo_path F:\workspace\python\repo_sync
+
+# clone all repo to local path
+python main.py clone --platform coding --repo_path F:\workspace\python\repo_sync
 ```
 
 ## License
