@@ -1,5 +1,5 @@
 # repo_sync
-[![](https://img.shields.io/badge/version-1.0.1-brightgreen.svg)](https://git.yoqi.me/lyq/repo_sync)
+[![](https://img.shields.io/badge/version-1.4.0-brightgreen.svg)](https://git.yoqi.me/lyq/repo_sync)
 [![](https://img.shields.io/badge/Python-3.11.5-brightgreen.svg)](https://git.yoqi.me/lyq/repo_sync)
 
 
@@ -24,6 +24,9 @@ windows 下载 [release]()使用即可
 ```
 python main.py --help
 python main.py create --platform gitlab --repo_path F:\workspace\python\repo_sync
+
+# clone all repo to local path
+python main.py clone --platform coding --repo_path F:\workspace\python\repo_sync
 ```
 
 ## License
