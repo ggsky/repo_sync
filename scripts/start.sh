@@ -6,6 +6,25 @@
 # 传入两个参数，/opt/repo_sync/repo_sync create --platform github --repo_path /home/workspace/xx
 ###############################################################################
 
+function install() {
+    echo "开始安装"
+    cd /opt
+    mkdir repo_sync
+    cd repo_sync
+    wget https://fileshare.yoqi.me/repo_sync/repo_sync
+    chmod +x repo_sync
+    echo '.env' >> .env
+    echo "export PATH=$PATH:/opt/repo_sync" >> /etc/profile
+    echo "安装完成"
+}
+
+function uninstall() {
+    echo "开始卸载"
+    rm -rf /opt/repo_sync
+    sed -i '/repo_sync/d' /etc/profile
+    echo "卸载完成"
+}
+
 # 打印logo，用户使用指南
 function print_logo() {
     echo -e "\033[32
