@@ -11,7 +11,6 @@
 """
 import os,subprocess,sys
 from repo_sync.platform.base_platform import BasePlatform
-from sqlalchemy import null
 from .project import Project
 from .repo import Repo
 
@@ -220,7 +219,7 @@ class CodingIE(BasePlatform):
     def delete(self, repo_name: str):
         """delete a repo"""
         repo = self.get_repo_info(repo_name=repo_name)
-        if repo is not null:
+        if repo is not None:
             data = {
                 "Action": "DeleteGitDepot",
                 "DepotId": repo.Id
