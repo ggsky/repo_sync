@@ -169,6 +169,7 @@ class CodingIE(BasePlatform):
                     exit(1)
             except Exception as e:
                 raise Exception(f'can not find repo {repo_name} in project {self.project_name}')
+                exit(1)
 
     def get_project_info(self)->Project:
         data = {
