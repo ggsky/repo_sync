@@ -11,6 +11,7 @@
 """
 import os,subprocess,sys
 from repo_sync.platform.base_platform import BasePlatform
+from sqlalchemy import null
 from .project import Project
 from .repo import Repo
 
@@ -166,10 +167,8 @@ class CodingIE(BasePlatform):
                     return depot
                 else:
                     print(f'can not find repo {repo_name} in project {self.project_name}')
-                    sys.exit()
             except Exception as e:
                 raise Exception(f'can not find repo {repo_name} in project {self.project_name}')
-                sys.exit()
 
     def get_project_info(self)->Project:
         data = {
@@ -221,16 +220,17 @@ class CodingIE(BasePlatform):
     def delete(self, repo_name: str):
         """delete a repo"""
         repo = self.get_repo_info(repo_name=repo_name)
-        data = {
-            "Action": "DeleteGitDepot",
-            "DepotId": repo.Id
-            }
-        r = self.sess.post(self.url, json=data)
-        if r.status_code == 200:
-            print(f'delete repo {repo_name} success', data,r.json())
-            return True
-        else:
-            return False
+        if repo is not null:
+            data = {
+                "Action": "DeleteGitDepot",
+                "DepotId": repo.Id
+                }
+            r = self.sess.post(self.url, json=data)
+            if r.status_code == 200:
+                print(f'delete repo {repo_name} success', data,r.json())
+                return True
+            else:
+                return False
 
     def pull(self, local_repo_path: str):
         ''' pull a repo from remote
