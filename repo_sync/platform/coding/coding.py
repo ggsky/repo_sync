@@ -9,7 +9,7 @@
 两种授权： token 授权，OAuth2.0 授权
 
 """
-import os,subprocess
+import os,subprocess,sys
 from repo_sync.platform.base_platform import BasePlatform
 from .project import Project
 from .repo import Repo
@@ -131,7 +131,7 @@ class CodingIE(BasePlatform):
                     return DepotList
                 else:
                     print(f'can not find repo in project {self.project_name}')
-                    exit(1)
+                    sys.exit()
             except Exception as e:
                 raise Exception(e)
         
@@ -166,10 +166,10 @@ class CodingIE(BasePlatform):
                     return depot
                 else:
                     print(f'can not find repo {repo_name} in project {self.project_name}')
-                    exit(1)
+                    sys.exit()
             except Exception as e:
                 raise Exception(f'can not find repo {repo_name} in project {self.project_name}')
-                exit(1)
+                sys.exit()
 
     def get_project_info(self)->Project:
         data = {
@@ -197,7 +197,7 @@ class CodingIE(BasePlatform):
             except Exception as e:
                 print(res_data)
                 print(e)
-                exit(1)
+                sys.exit()
 
     def create_repo(self, repo_name: str):
         """create a repo"""
