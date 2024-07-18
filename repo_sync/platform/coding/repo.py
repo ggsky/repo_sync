@@ -49,4 +49,4 @@ class Repo(object):
     def get_repo_user(self):
         """查询项目成员"""
         # https://{your-team}.coding.net/api/user/{user}/project/{project}/members
-
+        pass

@@ -121,3 +121,9 @@ class RepoSync(object):
         console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(formatter)
         self.logger.addHandler(console_handler)
+
+    def update(self):
+        '''
+        update repo_sync software, download and install the latest version
+        '''
+        pass

@@ -25,10 +25,10 @@ class CodingIE(BasePlatform):
         super().__init__(username , token)
         self.project_name = params.get('coding_project', '')
         self.repo_shared = False if params.get('coding_private', "true").lower()  == 'true' else True
+        self.url = f'{self._host}/open-api'
 
     def create_project(self):
         ''' createt a project '''
-        url = f'{self._host}/open-api'
         data = {
             'Action': 'CreateCodingProject',
             'Name': '',
@@ -40,7 +40,7 @@ class CodingIE(BasePlatform):
             'Shared': 1,
             'ProjectTemplateId': 'DEV_OPS',
         }
-        r = self.sess.post(url, json=data)
+        r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             res_data = r.json()
             return True
@@ -48,12 +48,11 @@ class CodingIE(BasePlatform):
             return False
 
     def delete_project(self):
-        url = f'{self._host}/open-api'
         data = {
             'Action': 'DeleteOneProject',
             'ProjectId': 0,
         }
-        r = self.sess.post(url, json=data)
+        r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             res_data = r.json()
             return True
@@ -68,14 +67,13 @@ class CodingIE(BasePlatform):
             Args: username: the target username may not self.username
             return: repo list
         """
-        url = f'{self._host}/open-api'
         data = {
             'Action': 'DescribeTeamDepotInfoList',
             'ProjectName': self.project_name,
             'PageNumber': 1,
             'PageSize': 50
         }
-        r = self.sess.post(url, json=data)
+        r = self.sess.post(self.url, json=data)
     
         if r.status_code == 200:
             res_data = r.json()
@@ -110,7 +108,7 @@ class CodingIE(BasePlatform):
                             'PageNumber': currentPage,
                             'PageSize': 50
                         }
-                        r = self.sess.post(url, json=data)
+                        r = self.sess.post(self.url, json=data)
                         res_data = r.json()
 
                         DepotList = res_data['Response']["DepotData"]["Depots"]
@@ -139,7 +137,6 @@ class CodingIE(BasePlatform):
         
     def get_repo_info(self, repo_name: str):
         """get repo list"""
-        url = f'{self._host}/open-api'
         data = {
             'Action': 'DescribeTeamDepotInfoList',
             'ProjectName': self.project_name,
@@ -147,7 +144,7 @@ class CodingIE(BasePlatform):
             'PageNumber': 1,
             'PageSize': 50
         }
-        r = self.sess.post(url, json=data)
+        r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             res_data = r.json()
             try:
@@ -172,9 +169,9 @@ class CodingIE(BasePlatform):
                     exit(1)
             except Exception as e:
                 raise Exception(f'can not find repo {repo_name} in project {self.project_name}')
+                exit(1)
 
     def get_project_info(self)->Project:
-        url = f'{self._host}/open-api'
         data = {
             "Action": "DescribeCodingProjects",
             "ProjectName": self.project_name,
@@ -182,7 +179,7 @@ class CodingIE(BasePlatform):
             "PageNumber": 1,
             "PageSize": 50
             }
-        r = self.sess.post(url, json=data)
+        r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             res_data = r.json()
             try:
@@ -207,7 +204,6 @@ class CodingIE(BasePlatform):
         # get project id
         project = self.get_project_info()
 
-        url = f'{self._host}/open-api/repos'
         data = {
                 "Action": "CreateGitDepot",
                 "ProjectId": project.Id, 
@@ -215,7 +211,7 @@ class CodingIE(BasePlatform):
                 "Shared": self.repo_shared,
                 "Description": "this is your first depot"
             }
-        r = self.sess.post(url, json=data)
+        r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             print(f'create repo {repo_name} success', data,r.json())
             return True
@@ -225,12 +221,11 @@ class CodingIE(BasePlatform):
     def delete(self, repo_name: str):
         """delete a repo"""
         repo = self.get_repo_info(repo_name=repo_name)
-        url = f'{self._host}/open-api/repos'
         data = {
             "Action": "DeleteGitDepot",
             "DepotId": repo.Id
             }
-        r = self.sess.post(url, json=data)
+        r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             print(f'delete repo {repo_name} success', data,r.json())
             return True
@@ -265,6 +260,8 @@ class CodingIE(BasePlatform):
         ''' push a local repo to remote
             Args: local_repo_path: local repo path
          '''
+        # check if remote repo is exist
+
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
