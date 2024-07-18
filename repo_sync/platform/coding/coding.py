@@ -131,7 +131,6 @@ class CodingIE(BasePlatform):
                     return DepotList
                 else:
                     print(f'can not find repo in project {self.project_name}')
-                    sys.exit()
             except Exception as e:
                 raise Exception(e)
         
@@ -195,26 +194,25 @@ class CodingIE(BasePlatform):
             except Exception as e:
                 print(res_data)
                 print(e)
-                sys.exit()
 
     def create_repo(self, repo_name: str):
         """create a repo"""
         # get project id
         project = self.get_project_info()
-
-        data = {
-                "Action": "CreateGitDepot",
-                "ProjectId": project.Id, 
-                "DepotName": repo_name,
-                "Shared": self.repo_shared,
-                "Description": "this is your first depot"
-            }
-        r = self.sess.post(self.url, json=data)
-        if r.status_code == 200:
-            print(f'create repo {repo_name} success', data,r.json())
-            return True
-        else:
-            return False
+        if project is not None:
+            data = {
+                    "Action": "CreateGitDepot",
+                    "ProjectId": project.Id, 
+                    "DepotName": repo_name,
+                    "Shared": self.repo_shared,
+                    "Description": "this is your first depot"
+                }
+            r = self.sess.post(self.url, json=data)
+            if r.status_code == 200:
+                print(f'create repo {repo_name} success', data,r.json())
+                return True
+            else:
+                return False
 
     def delete(self, repo_name: str):
         """delete a repo"""
