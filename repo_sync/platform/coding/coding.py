@@ -134,7 +134,7 @@ class CodingIE(BasePlatform):
             except Exception as e:
                 raise Exception(e)
         
-    def get_repo_info(self, repo_name: str):
+    def _get_repo_info(self, repo_name: str):
         """get repo list"""
         data = {
             'Action': 'DescribeTeamDepotInfoList',
@@ -200,23 +200,29 @@ class CodingIE(BasePlatform):
         # get project id
         project = self.get_project_info()
         if project is not None:
-            data = {
-                    "Action": "CreateGitDepot",
-                    "ProjectId": project.Id, 
-                    "DepotName": repo_name,
-                    "Shared": self.repo_shared,
-                    "Description": "this is your first depot"
-                }
-            r = self.sess.post(self.url, json=data)
-            if r.status_code == 200:
-                print(f'create repo {repo_name} success', data,r.json())
-                return True
+            repo = self._get_repo_info(repo_name=repo_name)
+            if repo is None:
+                data = {
+                        "Action": "CreateGitDepot",
+                        "ProjectId": project.Id, 
+                        "DepotName": repo_name,
+                        "Shared": self.repo_shared,
+                        "Description": "this is your first depot"
+                    }
+                r = self.sess.post(self.url, json=data)
+                if r.status_code == 200:
+                    print(f'create repo {repo_name} success', data,r.json())
+                    return True
+                else:
+                    return False
             else:
-                return False
+                print("repo: %s is exist" % repo_name)
+        else:
+            print("project: %s is not exist, cannot create repo in it." % self.project_name)
 
     def delete(self, repo_name: str):
         """delete a repo"""
-        repo = self.get_repo_info(repo_name=repo_name)
+        repo = self._get_repo_info(repo_name=repo_name)
         if repo is not None:
             data = {
                 "Action": "DeleteGitDepot",
