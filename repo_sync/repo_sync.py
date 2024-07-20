@@ -61,7 +61,7 @@ class RepoSync(object):
                 try:
                     url = re.findall(r'url\s+=\ (.*)', f.read())[0]
                     # print(url)
-                    repo.name = url.split('/')[-1].replace('.git', '')
+                    repo.name = repo_name # url.split('/')[-1].replace('.git', '')
                     repo.url = url
                 except Exception as e:
                     repo.name = repo_name
