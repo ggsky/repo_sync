@@ -10,6 +10,7 @@ import os,csv,re
 import logging
 from .platform import gen_extractor_classes
 from .repo import Repo
+from repo_sync.utils.colors import bcolors
 
 class RepoSync(object):
     '''
@@ -44,7 +45,7 @@ class RepoSync(object):
                     self._find_git_repo(path=current_path, repo_name=dir)
         with open(self.repo_list_path, 'w') as f:
             if len(self.repos) == 0:
-                print('repo list is empty, please delete repo_list.csv and try again')
+                print(f"{bcolors.WARNING}repo list is empty, please delete repo_list.csv and try again{bcolors.ENDC}")
                 return
             writer = csv.DictWriter(
                 f, fieldnames=self.repos[0].__dict__.keys(), lineterminator='\n'
@@ -60,7 +61,6 @@ class RepoSync(object):
                 repo =Repo()
                 try:
                     url = re.findall(r'url\s+=\ (.*)', f.read())[0]
-                    # print(url)
                     repo.name = repo_name # url.split('/')[-1].replace('.git', '')
                     repo.url = url
                 except Exception as e:
@@ -68,7 +68,7 @@ class RepoSync(object):
                 repo.local_path = path
                 self.repos.append(repo)
         except Exception as e:
-            print("skip {} because of {}".format(path, e))
+            print(f"{bcolors.OKGREEN}skip {path} because of {e}{bcolors.ENDC}")
 
     def run(self):
         '''
@@ -95,13 +95,13 @@ class RepoSync(object):
                         repo = Repo()
                         repo.__dict__ = row
                         if command == 'create':
-                            current_platform(username,token, host, self.params).create_repo(repo.name)
+                            current_platform(username, token, host, self.params).create_repo(repo.name)
                         if command == 'push':
-                            current_platform(username,token, host, self.params).push(repo.local_path)
+                            current_platform(username, token, host, self.params).push(repo.local_path)
                         elif command == 'delete':
-                            current_platform(username,token, host, self.params).delete(repo.name)
-                        elif command =='pull':
-                            current_platform(username,token, host, self.params).pull(repo.local_path)
+                            current_platform(username, token, host, self.params).delete(repo.name)
+                        elif command == 'pull':
+                            current_platform(username, token, host, self.params).pull(repo.local_path)
             else:
                 logging.info(
                     'repo list is not exist, please run list_local command first'

@@ -29,9 +29,11 @@ python main.py create --platform gitlab --repo_path F:\workspace\python\repo_syn
 python main.py clone --platform coding --repo_path F:\workspace\python\repo_sync
 ```
 
+
 ## License
 
-Apache License 2.0
+Licensed under the [Apache 2.0](LICENSE) © [liuyuqi.gov@msn.cn](https://github.com/jianboy)
+
 
 ## Reference
 
