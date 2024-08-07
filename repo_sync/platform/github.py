@@ -26,19 +26,20 @@ class GithubIE(BasePlatform):
 
     def create_repo(self, repo_name: str):
         """create a repo"""
-        url = f'{self._host}/user/repos'
-        payload = {
-            'name': repo_name,
-            'private': self.repo_private,
-            'has_issues': True,
-            'has_projects': False,
-            'has_wiki': False,
-        }
-        r = self.sess.post(url, data=json.dumps(payload))
-        if r.status_code != 201:
-            print(f'{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}')
-            return
-        print(f'{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}')
+        if not self._repo_exists(repo_name=repo_name):
+            url = f'{self._host}/user/repos'
+            payload = {
+                'name': repo_name,
+                'private': self.repo_private,
+                'has_issues': True,
+                'has_projects': False,
+                'has_wiki': False,
+            }
+            r = self.sess.post(url, data=json.dumps(payload))
+            if r.status_code != 201:
+                print(f'{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}')
+                return
+            print(f'{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}')
 
     def delete(self, repo_name: str):
         """delete a repo, maybe request a confirm by input"""
@@ -50,13 +51,13 @@ class GithubIE(BasePlatform):
             print(f'{bcolors.FAIL}Failed to delete repository: {repo_name} from github. Error {response.status_code}: {response.text}{bcolors.ENDC}')
         print(f'{bcolors.WARNING}delete repo: {repo_name} from github success{bcolors.ENDC}')
 
-    def repo_exists(self, repo_name: str):
+    def _repo_exists(self, repo_name: str):
         """check if a repo exists"""
         url = f'{self._host}/repos/{self.username}/{repo_name}'
-        print(f'{bcolors.INFO}check repo: {repo_name}{bcolors.ENDC}')
         try:
             response = self.sess.get(url)
             if response.status_code == 200:
+                print(f'{bcolors.OKGREEN}repo: {repo_name} is existed. {bcolors.ENDC}')
                 return True
         except Exception as e:
             return False
@@ -66,7 +67,7 @@ class GithubIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'{bcolors.INFO}pull repo: {self.username}/{repo_name} from github{bcolors.ENDC}')
+        print(f'{bcolors.OKGREEN}pull repo: {self.username}/{repo_name} from github{bcolors.ENDC}')
         
         os.chdir(local_repo_path)
         os.system('git remote remove origin_github')
@@ -80,16 +81,15 @@ class GithubIE(BasePlatform):
         os.system(f'git pull origin_github {current_branch}')
         os.system('git remote remove origin_github')
         os.chdir('..')
-        print(f'{bcolors.SUCCESS}pull from github success{bcolors.ENDC}')
+        print(f'{bcolors.OKGREEN}pull from github success{bcolors.ENDC}')
 
     def push(self, local_repo_path: str):
         """push a local repo to remote"""
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'{bcolors.INFO}push repo: {self.username}/{repo_name} to github{bcolors.ENDC}')
-        if not self.repo_exists(repo_name):
-            self.create_repo(repo_name)
+        print(f'{bcolors.OKGREEN}push repo: {self.username}/{repo_name} to github{bcolors.ENDC}')
+        self.create_repo(repo_name)
         os.chdir(local_repo_path)
         os.system('git remote remove origin_github')
         os.system(
@@ -104,12 +104,12 @@ class GithubIE(BasePlatform):
         os.system(f'git push -u origin_github {current_branch}')
         os.system('git remote remove origin_github')
         os.chdir('..')
-        print(f'{bcolors.SUCCESS}push to github success{bcolors.ENDC}')
+        print(f'{bcolors.OKGREEN}push to github success{bcolors.ENDC}')
 
     def get_repo_list(self) -> list:
         """get all repo list of a user"""
         if os.path.exists(self.repo_list_path):
-            print(f'{bcolors.INFO}repo is exist, please read from {self.repo_list_path} file{bcolors.ENDC}')
+            print(f'{bcolors.OKGREEN}repo is exist, please read from {self.repo_list_path} file{bcolors.ENDC}')
             with open(self.repo_list_path, 'r', newline='') as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:

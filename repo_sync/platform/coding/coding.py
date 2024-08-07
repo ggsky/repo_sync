@@ -235,7 +235,7 @@ class CodingIE(BasePlatform):
                     }
                 r = self.sess.post(self.url, json=data)
                 if r.status_code == 200:
-                    print(f'delete repo {repo_name} success', data,r.json())
+                    print(f'{bcolors.OKGREEN}delete repo {repo_name} success{bcolors.ENDC}', data, r.json())
                     return True
                 else:
                     return False
@@ -247,7 +247,7 @@ class CodingIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'pull repo:{self.username}/{repo_name} from coding')
+        print(f'{bcolors.OKGREEN} pull repo:{self.username}/{repo_name} from coding{bcolors.ENDC}')
         os.chdir(local_repo_path)
         try:
             os.system('git remote remove origin_coding')
@@ -262,7 +262,7 @@ class CodingIE(BasePlatform):
         os.system(f'git pull origin_coding {current_branch}')
         os.system('git remote remove origin_coding')
         os.chdir('..')
-        print('pull success')
+        print(f'{bcolors.OKGREEN}pull from coding success{bcolors.ENDC}')
 
     def push(self, local_repo_path: str):
         ''' push a local repo to remote
@@ -273,7 +273,7 @@ class CodingIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'push repo:{self.username}/{repo_name} to coding')
+        print(f'{bcolors.OKGREEN}push repo:{self.username}/{repo_name} to coding{bcolors.ENDC}')
         os.chdir(local_repo_path)
 
         os.system('git remote remove origin_coding')
@@ -288,7 +288,7 @@ class CodingIE(BasePlatform):
         os.system(f'git push -u origin_coding {current_branch}')
         os.system('git remote remove origin_coding')
         os.chdir('..')
-        print('push success')
+        print(f'{bcolors.OKGREEN}push to coding success{bcolors.ENDC}')
 
     def clone(self, repo_path: str):
         ''' clone all repo from remote
@@ -300,7 +300,7 @@ class CodingIE(BasePlatform):
                 cmd = f'git clone https://{self.username}:{self.token}@e.coding.net/{self.username}/{self.project_name}/{repo["Name"]}.git {repo_path}/{repo["Name"]}'
                 # print(cmd)
                 os.system(cmd)
-                print(f'clone repo:{repo["Name"]} success')
+                print(f'{bcolors.OKGREEN}clone success{bcolors.ENDC}')
             except Exception as e:
                 pass
 

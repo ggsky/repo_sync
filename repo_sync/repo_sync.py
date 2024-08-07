@@ -69,6 +69,7 @@ class RepoSync(object):
                 self.repos.append(repo)
         except Exception as e:
             print(f"{bcolors.OKGREEN}skip {path} because of {e}{bcolors.ENDC}")
+
     def run(self):
         '''
         run repo
@@ -94,13 +95,13 @@ class RepoSync(object):
                         repo = Repo()
                         repo.__dict__ = row
                         if command == 'create':
-                            current_platform(username,token, host, self.params).create_repo(repo.name)
+                            current_platform(username, token, host, self.params).create_repo(repo.name)
                         if command == 'push':
-                            current_platform(username,token, host, self.params).push(repo.local_path)
+                            current_platform(username, token, host, self.params).push(repo.local_path)
                         elif command == 'delete':
-                            current_platform(username,token, host, self.params).delete(repo.name)
-                        elif command =='pull':
-                            current_platform(username,token, host, self.params).pull(repo.local_path)
+                            current_platform(username, token, host, self.params).delete(repo.name)
+                        elif command == 'pull':
+                            current_platform(username, token, host, self.params).pull(repo.local_path)
             else:
                 logging.info(
                     'repo list is not exist, please run list_local command first'

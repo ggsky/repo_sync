@@ -27,22 +27,23 @@ class GitlabIE(BasePlatform):
         """create a repo
         and save project id to csv: gitlab_repo_list.csv
         """
-        url = f"{self.host}/api/v4/projects"
-        payload = {
-            "name": repo_name,
-            "visibility": self.repo_private,
-        }
-        r = self.sess.post(url, data=json.dumps(payload))
-        if r.status_code != 201:
-            print(f"{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}")
-            return
-        print(f"{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}")
-        for repo in self.repos:
-            if repo.name == repo_name:
-                repo.url = r.json()["web_url"]
-                repo.id = r.json()["id"]
-                break
-        self.save_csv()
+        if not self._repo_exists(repo_name):
+            url = f"{self.host}/api/v4/projects"
+            payload = {
+                "name": repo_name,
+                "visibility": self.repo_private,
+            }
+            r = self.sess.post(url, data=json.dumps(payload))
+            if r.status_code != 201:
+                print(f"{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}")
+                return
+            print(f"{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}")
+            # for repo in self.repos:
+            #     if repo.name == repo_name:
+            #         repo.url = r.json()["web_url"]
+            #         repo.id = r.json()["id"]
+            #         break
+            # self.save_csv()
     
     def delete(self, repo_name: str):
         """delete a repo,
@@ -51,15 +52,18 @@ class GitlabIE(BasePlatform):
         project_id = ""
         r = self.sess.get(f"{self.host}/api/v4/users/{self.username}/projects?search={repo_name}")
         if r.status_code == 200:
-            project_id = r.json()[0]["id"]
-            url = f"{self.host}/api/v4/projects/{project_id}"
-            response = self.sess.delete(url)
-            if response.status_code == 202:
-                print(f"{bcolors.OKGREEN}Repository: {repo_name} deleted from gitlab successfully!{bcolors.ENDC}")
-            else:
-                print(
-                    f"{bcolors.FAIL}Failed to delete repository: {repo_name} from gitlab. Error {response.status_code}: {response.text}{bcolors.ENDC}"
-                )
+            try:
+                project_id = r.json()[0]["id"]
+                url = f"{self.host}/api/v4/projects/{project_id}"
+                response = self.sess.delete(url)
+                if response.status_code == 202:
+                    print(f"{bcolors.OKGREEN}Repository: {repo_name} deleted from gitlab successfully!{bcolors.ENDC}")
+                else:
+                    print(
+                        f"{bcolors.FAIL}Failed to delete repository: {repo_name} from gitlab. Error {response.status_code}: {response.text}{bcolors.ENDC}"
+                    )
+            except Exception as e:
+                print(f"{bcolors.FAIL}Failed to delete repository: {repo_name} from gitlab. Error {e}, check repo is exist first.{bcolors.ENDC}")
         else:
             print(f"{bcolors.FAIL}Failed to delete repository: {repo_name} from gitlab. Error {r.status_code}: {r.text}{bcolors.ENDC}")
     
@@ -132,7 +136,21 @@ class GitlabIE(BasePlatform):
     
     def clone(self):
         pass
-    
+
+    def _repo_exists(self, repo_name: str):
+        """ check if a repo exists
+        if not exist, return [] empty list
+        """
+        project_id = ""
+        r = self.sess.get(f"{self.host}/api/v4/users/{self.username}/projects?search={repo_name}")
+        if r.status_code == 200:
+            try:
+                project_id = r.json()[0]["id"]
+                print(f'{bcolors.OKGREEN}repo: {repo_name} is existed. {bcolors.ENDC}')
+                return True
+            except Exception as e:
+                return False
+            
     @classmethod
     def suitable(cls, extractor: str) -> bool:
         """check if this extractor is suitable for this platform"""
