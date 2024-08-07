@@ -1,5 +1,6 @@
 import requests,csv,os
 from repo_sync.repo import Repo
+from repo_sync.utils.colors import bcolors
 
 class BasePlatform(object):
     """base platform"""
@@ -56,7 +57,7 @@ class BasePlatform(object):
     def save_csv(self):
         with open(self.repo_list_path, 'w', newline='') as f:
             if len(self.repos) == 0:
-                print('repo list is empty, please delete repo_list.csv and try again')
+                print(f"{bcolors.WARNING}repo list is empty, please delete repo_list.csv and try again{bcolors.ENDC}")
                 return
             writer = csv.DictWriter(f, fieldnames=self.repos[0].__dict__.keys(), lineterminator='\n')
             writer.writeheader()
