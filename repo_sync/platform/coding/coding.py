@@ -138,7 +138,7 @@ class CodingIE(BasePlatform):
             except Exception as e:
                 print(bcolors.FAIL + str(e) + bcolors.ENDC)
         
-    def _get_repo_info(self, repo_name: str):
+    def _repo_exists(self, repo_name: str):
         """get repo list"""
         data = {
             'Action': 'DescribeTeamDepotInfoList',
@@ -204,7 +204,7 @@ class CodingIE(BasePlatform):
         # get project id
         project = self.get_project_info()
         if project is not None:
-            repo = self._get_repo_info(repo_name=repo_name)
+            repo = self._repo_exists(repo_name=repo_name)
             if repo is None:
                 data = {
                     "Action": "CreateGitDepot",
@@ -227,7 +227,7 @@ class CodingIE(BasePlatform):
     
     def delete(self, repo_name: str):
             """delete a repo"""
-            repo = self._get_repo_info(repo_name=repo_name)
+            repo = self._repo_exists(repo_name=repo_name)
             if repo is not None:
                 data = {
                     "Action": "DeleteGitDepot",
@@ -274,6 +274,7 @@ class CodingIE(BasePlatform):
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(f'{bcolors.OKGREEN}push repo:{self.username}/{repo_name} to coding{bcolors.ENDC}')
+        self.create_repo(repo_name=repo_name)
         os.chdir(local_repo_path)
 
         os.system('git remote remove origin_coding')
