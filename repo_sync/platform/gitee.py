@@ -24,17 +24,18 @@ class GiteeIE(BasePlatform):
         self.repo_private = True if params.get('gitee_private', "true").lower() == 'true' else False
     
     def create_repo(self, repo_name: str):
-        """create a repo"""        
-        url = f'{self._api}/user/repos'
-        form_data = {
-            'name': repo_name, 
-            'private': self.repo_private,
-        }
-        r = self.sess.post(url, params=form_data)
-        if r.status_code != 201:
-            print(bcolors.FAIL + f'create repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
-            return
-        print(bcolors.OKGREEN + f'create repo {repo_name} success' + bcolors.ENDC)
+        """create a repo"""
+        if not self._repo_exists(repo_name=repo_name):
+            url = f'{self._api}/user/repos'
+            form_data = {
+                'name': repo_name, 
+                'private': self.repo_private,
+            }
+            r = self.sess.post(url, params=form_data)
+            if r.status_code != 201:
+                print(bcolors.FAIL + f'create repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
+                return
+            print(bcolors.OKGREEN + f'create repo {repo_name} success' + bcolors.ENDC)
     
     def delete(self, repo_name: str):
         """delete a repo"""
@@ -92,7 +93,7 @@ class GiteeIE(BasePlatform):
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
         print(bcolors.WARNING + f'push repo:{self.username}/{repo_name} to gitee' + bcolors.ENDC)
-        
+        self.create_repo(repo_name)
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gitee')
         os.system(f'git remote add origin_gitee https://{self.username}:{self.token}@gitee.com/{self.username}/{repo_name}.git')
@@ -107,6 +108,22 @@ class GiteeIE(BasePlatform):
         
         print(bcolors.OKGREEN + 'push to gitee success' + bcolors.ENDC)
     
+    def _repo_exists(self, repo_name: str):
+        """check if a repo exists
+        不存在，{
+                "message": "Not Found Project"
+                }
+        存在：返回 repo 数据
+        """
+        url = f'{self._api}/repos/{self.username}/{repo_name}'
+        try:
+            response = self.sess.get(url)
+            if response.status_code == 200 and response.json()['message'] != 'Not Found Project':
+                print(f'{bcolors.OKGREEN}repo: {repo_name} is existed. {bcolors.ENDC}')
+                return True
+        except Exception as e:
+            return False
+        
     @classmethod
     def suitable(cls, extractor: str) -> bool:
         """check if this extractor is suitable for this platform"""
