@@ -5,6 +5,7 @@ from .gitea import GiteaIE
 from .gitlab import GitlabIE
 from .gogs import GogsIE
 from .coding import CodingIE
+from .gitcode import GitcodeIE
 
 _ALL_CLASSES = [klass for name, klass in globals().items()
                 if name.endswith('IE')]
