@@ -17,3 +17,13 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+if __name__=='__main__':
+    print(bcolors.HEADER+"Hello World!"+bcolors.ENDC)
+    print(bcolors.OKBLUE+"Hello World!"+bcolors.ENDC)
+    print(bcolors.OKGREEN+"Hello World!"+bcolors.ENDC)
+    print(bcolors.WARNING+"Hello World!"+bcolors.ENDC)
+    print(bcolors.FAIL+"Hello World!"+bcolors.ENDC)
+    print(bcolors.BOLD+"Hello World!"+bcolors.ENDC)
+    print(bcolors.UNDERLINE+"Hello World!"+bcolors.ENDC)

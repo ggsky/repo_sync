@@ -153,19 +153,26 @@ class CodingIE(BasePlatform):
             try:
                 if res_data['Response']["DepotData"]["Page"]["TotalRow"] > 0:
                     DepotList = res_data['Response']["DepotData"]["Depots"]
-                    depot = Repo(
-                        Id=DepotList[0]['Id'],
-                        Name=DepotList[0]['Name'],
-                        HttpsUrl=DepotList[0]['HttpsUrl'],
-                        ProjectId=DepotList[0]['ProjectId'],
-                        SshUrl=DepotList[0]['SshUrl'],
-                        WebUrl=DepotList[0]['WebUrl'],
-                        ProjectName=DepotList[0]['ProjectName'],
-                        Description=DepotList[0]['Description'],
-                        CreatedAt=DepotList[0]['CreatedAt'],
-                        GroupId=DepotList[0]['GroupId'],
-                        GroupName=DepotList[0]['GroupName']
-                    )
+                    for repo in DepotList:
+                        if repo['Name'] == repo_name:
+                            depot = Repo(
+                                Id=repo['Id'],
+                                Name=repo['Name'],
+                                HttpsUrl=repo['HttpsUrl'],
+                                ProjectId=repo['ProjectId'],
+                                SshUrl=repo['SshUrl'],
+                                WebUrl=repo['WebUrl'],
+                                ProjectName=repo['ProjectName'],
+                                Description=repo['Description'],
+                                CreatedAt=repo['CreatedAt'],
+                                GroupId=repo['GroupId'],
+                                GroupName=repo['GroupName']
+                            )
+                        break
+                    if depot is None:
+                        print(bcolors.WARNING + f'Cannot find repo {repo_name} in project {self.project_name}' + bcolors.ENDC)
+                    else:
+                        print(bcolors.OKGREEN + f'Find repo {repo_name} in project {self.project_name}' + bcolors.ENDC)
                     return depot
                 else:
                     print(bcolors.WARNING + f'Cannot find repo {repo_name} in project {self.project_name}' + bcolors.ENDC)
@@ -220,8 +227,6 @@ class CodingIE(BasePlatform):
                 else:
                     print(bcolors.FAIL + 'Failed to create repo' + bcolors.ENDC)
                     return False
-            else:
-                print(bcolors.WARNING + f"Repo: {repo_name} already exists" + bcolors.ENDC)
         else:
             print(bcolors.FAIL + f"Project: {self.project_name} does not exist, cannot create repo in it." + bcolors.ENDC)
     
