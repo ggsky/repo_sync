@@ -36,7 +36,8 @@ class GiteeIE(BasePlatform):
                 print(bcolors.FAIL + f'create repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
                 return
             print(bcolors.OKGREEN + f'create repo {repo_name} success' + bcolors.ENDC)
-    
+            print(bcolors.OKGREEN + f'{self._host}/{self.username}/{repo_name}' + bcolors.ENDC)
+
     def delete(self, repo_name: str):
         """delete a repo"""
         url = f'{self._api}/repos/{self.username}/{repo_name}'
