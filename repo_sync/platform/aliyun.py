@@ -48,7 +48,8 @@ class AliyunDevOps(BasePlatform):
         else:
             print(r.json())
             print(f'{bcolors.OKGREEN}create project {project_name} success{bcolors.ENDC}')
-
+            print(f'{bcolors.OKGREEN}{self._host}/{self.username}/{project_name}{bcolors.ENDC}')
+            
     def get_project_info(self, project_name: str):
         """get project info"""
         url = f'{self._api}/api/4/groups/find_by_path'

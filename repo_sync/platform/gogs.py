@@ -36,7 +36,8 @@ class GogsIE(BasePlatform):
             print(bcolors.FAIL + f'create org repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
             return
         print(bcolors.OKGREEN + f'create org repo {repo_name} success' + bcolors.ENDC)
-
+        print(f'{bcolors.OKGREEN}{self._host}/{org_name}/{repo_name}{bcolors.ENDC}')
+        
     def create_repo(self, repo_name: str):
         """create a repo"""
         url = f'{self._host}/api/v1/user/repos'

@@ -223,6 +223,7 @@ class CodingIE(BasePlatform):
                 r = self.sess.post(self.url, json=data)
                 if r.status_code == 200:
                     print(bcolors.OKGREEN + f'Create repo {repo_name} success' + bcolors.ENDC)
+                    print(bcolors.OKGREEN + f'https://e.coding.net/{self.username}/{self.project_name}/{repo_name}' + bcolors.ENDC)
                     return True
                 else:
                     print(bcolors.FAIL + 'Failed to create repo' + bcolors.ENDC)

@@ -40,7 +40,8 @@ class GithubIE(BasePlatform):
                 print(f'{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}')
                 return
             print(f'{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}')
-
+            print(f'{bcolors.OKGREEN}{self._host}/{self.username}/{repo_name}{bcolors.ENDC}')
+            
     def delete(self, repo_name: str):
         """delete a repo, maybe request a confirm by input"""
         url = f'{self._host}/repos/{self.username}/{repo_name}'
