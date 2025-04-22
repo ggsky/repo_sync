@@ -21,48 +21,48 @@ class AliyunDevOpsIE(BasePlatform):
     """aliyun devops"""
 
     # _host = 'https://devops.cn-hangzhou.aliyuncs.com'
-    _host = r"https://codeup.aliyun.com"
-    _api_host = r"https://openapi-rdc.aliyuncs.com"
+    # _host = r"https://codeup.aliyun.com"
+    _host = r"https://openapi-rdc.aliyuncs.com"
 
     def __init__(self, username:str, token:str, host:str =None, params: dict = None) -> None:
         super().__init__(username=username, token=token)
-        self.sess.headers.update({'Content-Type': 'multipart/form-data',
+        self.sess.headers.update({'Content-Type': 'application/json',
                                   'X-Yunxiao-Token': self.token})
         self.repo_private = "private" if params.get('aliyun_private', "true").lower()  == 'true' else "public"
         self.companyId = params.get('aliyun_compoanyid')
-        self._api = self._api_host + '/oapi/v1'
+        self._api = self._host + '/oapi/v1'
 
-### 查询
-# GET {{api}}/codeup/organizations/{{organizationId}}/repositories/{{repositoryId}}
-# Content-Type: application/json
-# X-Yunxiao-Token: {{token}}
-
-
-    def _get_repo_info(self, repo_name: str):
-        """get repo info"""
+    def _repo_exists(self, repo_name: str):
+        """repo if exists"""
         url = f'{self._api}/codeup/organizations/{self.companyId}/repositories/{repo_name}'
         r = self.sess.get(url)
         if r.status_code != 200:
             print(f"{bcolors.FAIL}get repo info failed, status code {r.status_code}{bcolors.ENDC}")
-            return
-        return r.json()
+            return False
+        return True
 
     def create_repo(self, repo_name: str):
-        """create a repo"""        
-        url = f'{self._api}/codeup/organizations/{self.companyId}/repositories'
-        print(url)
-        form_data = {
-            'name': repo_name, 
-            'path': repo_name,
-            'visibility': self.repo_private,
-        }
-        r = self.sess.post(url, data=json.dumps(form_data))
-        print(r.text)
-        # r = self.sess.post(url, json=json.dumps(form_data))
-        if r.status_code != 200:
-            print(f"{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}")
-            print(f"{bcolors.FAIL}response: {r.text}{bcolors.ENDC}")
-            return
+        """create a repo"""
+        if not self._repo_exists(repo_name=repo_name):
+            url = f'{self._api}/codeup/organizations/{self.companyId}/repositories'
+            form_data = {
+                'name': repo_name, 
+                'path': repo_name,
+                'visibility': self.repo_private,
+            }
+            r = self.sess.post(url, data=json.dumps(form_data))
+            # r = self.sess.post(url, json=json.dumps(form_data))
+            if r.status_code != 200:
+                print(f"{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}")
+                print(f"{bcolors.FAIL}response: {r.text}{bcolors.ENDC}")
+                return False
+            print(f"{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}")
+            print(f"{bcolors.OKGREEN}https://codeup.aliyun.com/{self.companyId}/{repo_name}{bcolors.ENDC}")
+            return True
+        else:
+            print(f"{bcolors.OKGREEN}repo {repo_name} already exists{bcolors.ENDC}")
+            print(f"{bcolors.OKGREEN}https://codeup.aliyun.com/{self.companyId}/{repo_name}{bcolors.ENDC}")
+            return True 
 
     def delete(self, repo_name: str):
             """delete a project"""
