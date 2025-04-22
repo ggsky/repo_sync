@@ -1,5 +1,5 @@
 import requests,csv,os
-from repo_sync.repo import Repo
+from repo_sync.models import Repo
 from repo_sync.utils.colors import bcolors
 
 class BasePlatform(object):

@@ -9,7 +9,7 @@
 import os,csv,re
 import logging
 from .platform import gen_extractor_classes
-from .repo import Repo
+from .models import Repo
 from repo_sync.utils.colors import bcolors
 
 class RepoSync(object):

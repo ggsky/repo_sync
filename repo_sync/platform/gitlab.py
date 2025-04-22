@@ -12,7 +12,7 @@ import re
 import csv
 import subprocess
 from .base_platform import BasePlatform
-from repo_sync.repo import Repo
+from repo_sync.models import Repo
 from repo_sync.utils.colors import bcolors
 
 class GitlabIE(BasePlatform):
