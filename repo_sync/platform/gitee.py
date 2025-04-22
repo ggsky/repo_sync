@@ -10,7 +10,7 @@
 from .base_platform import BasePlatform
 import csv, subprocess
 import os
-from repo_sync.repo import Repo
+from repo_sync.models import Repo
 from repo_sync.utils.colors import bcolors
 
 class GiteeIE(BasePlatform):

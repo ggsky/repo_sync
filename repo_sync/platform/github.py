@@ -9,7 +9,7 @@
 import os
 import json
 import csv, subprocess
-from repo_sync.repo import Repo
+from repo_sync.models import Repo
 from .base_platform import BasePlatform
 from repo_sync.utils.colors import bcolors
 
