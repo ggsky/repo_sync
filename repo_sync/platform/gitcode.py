@@ -13,7 +13,8 @@ api 和 gitcode 类似
 '''
 from .base_platform import BasePlatform
 from repo_sync.utils.colors import bcolors
-import os, subprocess
+import os, subprocess,json
+
 class GitcodeIE(BasePlatform):
     """ gitcode platform """
     
@@ -28,7 +29,7 @@ class GitcodeIE(BasePlatform):
             }
         )
         self._host = 'https://api.gitcode.com' if host is None else host
-        self._api = self._host + '/api/v5'
+        self._api: str = self._host + '/api/v5'
         self.repo_private = True if params.get('gitcode_private', "true").lower() == 'true' else False
 
     
@@ -41,7 +42,8 @@ class GitcodeIE(BasePlatform):
                 'name': repo_name, 
                 'private': self.repo_private,
             }
-            r = self.sess.post(url, params=form_data)
+            # r = self.sess.post(url, params=json.dumps(form_data))
+            r = self.sess.post(url, data=json.dumps(form_data))
             if r.status_code != 200:
                 print(bcolors.FAIL + f'create repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
                 return
