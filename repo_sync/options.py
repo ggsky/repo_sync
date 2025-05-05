@@ -30,7 +30,7 @@ def parser_args(overrideArguments=None):
         '-p',
         '--platform',
         help='set a platform',
-        choices=['github', 'gitee', 'gitlab', 'gogs', 'gitea', 'bitbucket', 'coding', 'aliyun','gitcode'],
+        choices=['github', 'gitee', 'gitlab', 'gogs', 'gitea', 'bitbucket', 'coding', 'aliyun','gitcode','cnb'],
         default='github',
     )
     argparser.add_argument('-token', '--token', help='set a token')
