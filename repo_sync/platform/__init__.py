@@ -7,6 +7,7 @@ from .gogs import GogsIE
 from .coding import CodingIE
 from .gitcode import GitcodeIE
 from .aliyun import AliyunDevOpsIE
+from .cnb import CnbIE
 
 _ALL_CLASSES = [klass for name, klass in globals().items()
                 if name.endswith('IE')]
