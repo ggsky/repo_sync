@@ -48,7 +48,6 @@ class CnbIE(BasePlatform):
         else:
             logger.error(f'delete repo {self.group}/{repo_name} failed. {response.text}')
             return
-        logger.info(f'create repo {self.group}/{repo_name} success')
         logger.info(f'{self._host}/{self.group}/{repo_name}')
             
     def push(self, local_repo_path: str):
