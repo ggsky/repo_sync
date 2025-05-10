@@ -32,5 +32,7 @@ def gui_main():
         print("Please install PyQt5 and pywin32 with: pip install PyQt5 pywin32")
         sys.exit(1)
     except Exception as e:
-        print(f"Error starting GUI: {e}")
+        print(f"Error starting GUI: {str(e)}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)

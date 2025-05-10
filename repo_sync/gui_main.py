@@ -2,13 +2,19 @@ import sys
 import os
 import threading
 import subprocess
-from PyQt5.QtWidgets import (
-    QApplication, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QRadioButton, QPushButton, QButtonGroup, QGroupBox, QMessageBox, 
-    QLineEdit, QScrollArea, QFileDialog, QFormLayout, QCheckBox, QTextEdit,
-    QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton, QListWidget, QListWidgetItem
-)
-from PyQt5.QtCore import Qt, pyqtSignal, QObject
+try:
+    from PyQt5.QtWidgets import (
+        QApplication, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+        QRadioButton, QPushButton, QButtonGroup, QGroupBox, QMessageBox, 
+        QLineEdit, QScrollArea, QFileDialog, QFormLayout, QCheckBox, QTextEdit,
+        QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton, QListWidget, QListWidgetItem
+    )
+    from PyQt5.QtCore import Qt, pyqtSignal, QObject
+    HAS_QT = True
+except ImportError:
+    HAS_QT = False
+    print("PyQt5 not installed, GUI mode not available")
+
 from repo_sync import RepoSync, __version__
 from dotenv import load_dotenv, set_key, find_dotenv, dotenv_values
 import json
@@ -129,8 +135,25 @@ class MainTab(QWidget):
         
         # 读取所有账户
         accounts = self.get_platform_accounts(platform)
-        for account_name in accounts:
-            self.account_combo.addItem(account_name)
+        
+        # 找出启用的账户
+        enabled_account = "default"
+        env_values = dotenv_values(find_dotenv())
+        for account in accounts:
+            if account != "default" and env_values.get(f"{platform}_{account}_enabled", "").lower() == "true":
+                enabled_account = account
+                break
+        
+        # 添加账户到下拉框，启用的账户放在最前面
+        if enabled_account in accounts:
+            accounts.remove(enabled_account)
+            self.account_combo.addItem(f"{enabled_account} (启用中)")
+            
+        for account in accounts:
+            self.account_combo.addItem(account)
+        
+        # 默认选择启用的账户
+        self.account_combo.setCurrentIndex(0)
 
     def get_platform_accounts(self, platform):
         # 读取.env文件中的所有配置
@@ -145,7 +168,7 @@ class MainTab(QWidget):
         for key in env_values.keys():
             if key.startswith(prefix) and "_" in key[len(prefix):]:
                 account_name = key[len(prefix):].split("_")[0]
-                if account_name != "default":
+                if account_name != "default" and account_name != "":
                     accounts.add(account_name)
         
         return sorted(list(accounts))
@@ -160,7 +183,10 @@ class MainTab(QWidget):
         pf_id = self.pf_buttons.checkedId()
         op = ["create", "push", "pull", "clone", "delete"][op_id]
         pf = self.platforms[pf_id]
-        account = self.account_combo.currentText()
+        
+        # 获取选择的账户名（去掉可能的"(启用中)"后缀）
+        account_text = self.account_combo.currentText()
+        account = account_text.split(" (")[0] if " (" in account_text else account_text
         
         # 清空结果区域
         self.result_text.clear()
@@ -178,6 +204,16 @@ class MainTab(QWidget):
         cmd.extend(["-p", pf])
         cmd.extend(["-repo_path", repo_path])
         
+        # 如果不是默认账户，需要设置环境变量
+        env = os.environ.copy()
+        if account != "default":
+            # 读取账户配置
+            env_values = dotenv_values(find_dotenv())
+            for key, value in env_values.items():
+                if key.startswith(f"{pf}_{account}_"):
+                    field = key[len(f"{pf}_{account}_"):]
+                    env[f"{pf}_{field}"] = value
+        
         # 执行命令
         self.run_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
@@ -186,12 +222,12 @@ class MainTab(QWidget):
         # 在新线程中执行命令
         self.process_thread = threading.Thread(
             target=self.run_process,
-            args=(cmd,)
+            args=(cmd, env)
         )
         self.process_thread.daemon = True
         self.process_thread.start()
 
-    def run_process(self, cmd):
+    def run_process(self, cmd, env=None):
         try:
             self.process = subprocess.Popen(
                 cmd,
@@ -199,7 +235,8 @@ class MainTab(QWidget):
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
+                env=env
             )
             
             # 读取输出
@@ -394,8 +431,15 @@ class SettingsTab(QWidget):
         self.platform_tabs.currentChanged.connect(self.tab_changed)
 
     def tab_changed(self, index):
-        platform = list(self.platform_configs.keys())[index]
-        self.update_account_details(platform)
+        try:
+            # 使用有序字典确保顺序一致性
+            platforms = list(self.platform_configs.keys())
+            if index < 0 or index >= len(platforms):
+                return
+            platform = platforms[index]
+            self.update_account_details(platform)
+        except Exception as e:
+            print(f"Error in tab_changed: {e}")
 
     def load_settings(self):
         # 读取.env文件
@@ -687,10 +731,22 @@ class RepoSyncMainWindow(QTabWidget):
         self.addTab(self.about_tab, '关于')
 
 def main():
-    app = QApplication(sys.argv)
-    window = RepoSyncMainWindow()
-    window.show()
-    sys.exit(app.exec_())
+    """GUI主入口函数"""
+    if not HAS_QT:
+        print("PyQt5 not installed. Please install it with: pip install PyQt5")
+        print("Running in fallback mode...")
+        # 这里可以添加一个简单的命令行界面作为后备
+        return
+        
+    try:
+        app = QApplication(sys.argv)
+        window = RepoSyncMainWindow()
+        window.show()
+        sys.exit(app.exec_())
+    except Exception as e:
+        print(f"Error starting GUI: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == '__main__':
     main() 
