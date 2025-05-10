@@ -21,4 +21,16 @@ def main(argv=None):
         logger.error('ERROR: Interrupted by user')
         sys.exit(1)
 
-# GUI入口预留
+# GUI入口
+def gui_main():
+    """GUI entry point of the program"""
+    try:
+        from .gui_main import main as gui_main_func
+        gui_main_func()
+    except ImportError as e:
+        print(f"GUI dependencies not installed: {e}")
+        print("Please install PyQt5 and pywin32 with: pip install PyQt5 pywin32")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error starting GUI: {e}")
+        sys.exit(1)

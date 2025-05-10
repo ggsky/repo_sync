@@ -23,7 +23,9 @@ def parser_args(overrideArguments=None):
     argparser.add_argument(
         'command',
         help='command: ',
-        choices=['create', 'clone', 'push', 'delete', 'pull'],
+        choices=['create', 'clone', 'push', 'delete', 'pull', 'gui'],
+        nargs='?',
+        default=''
     )
     argparser.add_argument('-d', '--debug', help='debug mode', action='store_true')
     argparser.add_argument(
