@@ -18,3 +18,5 @@ def main(argv=None):
         rs.run()
     except KeyboardInterrupt:
         sys.exit('\nERROR: Interrupted by user')
+
+# GUI入口预留
