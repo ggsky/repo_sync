@@ -23,7 +23,7 @@ def parser_args(overrideArguments=None):
     argparser.add_argument(
         'command',
         help='command: ',
-        choices=['create', 'clone', 'push', 'delete', 'pull', 'gui'],
+        choices=['create', 'clone', 'push', 'delete', 'pull'],
         nargs='?',
         default=''
     )

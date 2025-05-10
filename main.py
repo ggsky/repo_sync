@@ -6,11 +6,7 @@
 @License :   Copyright © 2017-2022 liuyuqi. All Rights Reserved.
 @Desc    :   
 '''
-from repo_sync import main, gui_main
-import sys
+from repo_sync import main
 
 if __name__=='__main__':
-    if len(sys.argv) > 1 and sys.argv[1] == 'gui':
-        gui_main()
-    else:
-        main()
+    main()
