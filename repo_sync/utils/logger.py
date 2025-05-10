@@ -4,6 +4,8 @@ from termcolor import colored
 class ColoredFormatter(logging.Formatter):
     def format(self, record):
         # 保留原始消息不变
+        import colorama
+        colorama.init()    # 解决windows cmd 颜色显示问题
         original_msg = record.msg
         if record.levelno == logging.DEBUG:
             record.msg = colored(record.msg, 'blue')
