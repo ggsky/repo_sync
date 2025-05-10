@@ -12,7 +12,7 @@ import csv, subprocess
 import os
 from repo_sync.models import Repo
 from repo_sync.utils.colors import bcolors
-
+from repo_sync.utils.logger import logger
 class GiteeIE(BasePlatform):
     """gitee async"""
     _host = 'https://gitee.com'
@@ -33,19 +33,19 @@ class GiteeIE(BasePlatform):
             }
             r = self.sess.post(url, params=form_data)
             if r.status_code != 201:
-                print(bcolors.FAIL + f'create repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
+                logger.error(f'create repo {repo_name} failed, status code {r.status_code}')
                 return
-            print(bcolors.OKGREEN + f'create repo {repo_name} success' + bcolors.ENDC)
-            print(bcolors.OKGREEN + f'{self._host}/{self.username}/{repo_name}' + bcolors.ENDC)
+            logger.info(f'create repo {repo_name} success')
+            logger.info(f'{self._host}/{self.username}/{repo_name}')
 
     def delete(self, repo_name: str):
         """delete a repo"""
         url = f'{self._api}/repos/{self.username}/{repo_name}'
         response = self.sess.delete(url)
         if response.status_code == 204:
-            print(bcolors.OKBLUE + f'Repository: {repo_name} deleted from gitee successfully!' + bcolors.ENDC)
+            logger.info(f'Repository: {repo_name} deleted from gitee successfully!')
         else:
-            print(bcolors.FAIL + f'Failed to delete repository: {repo_name} from gitee. Error {response.status_code}: {response.text}' + bcolors.ENDC)
+            logger.error(f'Failed to delete repository: {repo_name} from gitee. Error {response.status_code}: {response.text}')
     
     def get_repo_list(self) -> list:
         """get repo list"""
@@ -61,7 +61,7 @@ class GiteeIE(BasePlatform):
         url = f'{self._api}/user/repos'
         r = self.sess.get(url)
         if r.status_code != 200:
-            print(bcolors.FAIL + f'get repo list failed, status code {r.status_code}' + bcolors.ENDC)
+            logger.error(f'get repo list failed, status code {r.status_code}')
             return
         
         repo_list = r.json()
@@ -75,7 +75,7 @@ class GiteeIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(bcolors.WARNING + f'pull repo:{self.username}/{repo_name} from gitee' + bcolors.ENDC)
+        logger.info(f'pull repo:{self.username}/{repo_name} from gitee')
         
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gitee')
@@ -87,13 +87,13 @@ class GiteeIE(BasePlatform):
         os.system('git remote remove origin_gitee')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'pull from gitee success' + bcolors.ENDC)
+        logger.info(f'pull from gitee success')
     
     def push(self, local_repo_path: str):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(bcolors.WARNING + f'push repo:{self.username}/{repo_name} to gitee' + bcolors.ENDC)
+        logger.info(f'push repo:{self.username}/{repo_name} to gitee')
         self.create_repo(repo_name)
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gitee')
@@ -107,7 +107,7 @@ class GiteeIE(BasePlatform):
         os.system('git remote remove origin_gitee')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'push to gitee success' + bcolors.ENDC)
+        logger.info(f'push to gitee success')
     
     def _repo_exists(self, repo_name: str):
         """check if a repo exists
@@ -120,7 +120,7 @@ class GiteeIE(BasePlatform):
         try:
             response = self.sess.get(url)
             if response.status_code == 200 and response.json()['message'] != 'Not Found Project':
-                print(f'{bcolors.OKGREEN}repo: {repo_name} is existed. {bcolors.ENDC}')
+                logger.info(f'repo: {repo_name} is existed.')
                 return True
         except Exception as e:
             return False

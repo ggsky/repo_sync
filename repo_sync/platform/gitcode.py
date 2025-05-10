@@ -14,7 +14,7 @@ api 和 gitcode 类似
 from .base_platform import BasePlatform
 from repo_sync.utils.colors import bcolors
 import os, subprocess,json
-
+from repo_sync.utils.logger import logger
 class GitcodeIE(BasePlatform):
     """ gitcode platform """
     
@@ -45,19 +45,19 @@ class GitcodeIE(BasePlatform):
             # r = self.sess.post(url, params=json.dumps(form_data))
             r = self.sess.post(url, data=json.dumps(form_data))
             if r.status_code != 200:
-                print(bcolors.FAIL + f'create repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
+                logger.error(f'create repo {repo_name} failed, status code {r.status_code}')
                 return
-            print(bcolors.OKGREEN + f'create repo {repo_name} success' + bcolors.ENDC)
-            print(f'{bcolors.OKGREEN}{self._host}/{self.username}/{repo_name}{bcolors.ENDC}')
+            logger.info(f'create repo {repo_name} success')
+            logger.info(f'{self._host}/{self.username}/{repo_name}')
             
     def delete(self, repo_name: str):
         """ delete a repo """
         url = f'{self._api}/repos/{self.username}/{repo_name}'
         response = self.sess.delete(url)
         if response.status_code == 204:
-            print(bcolors.OKBLUE + f'Repository: {repo_name} deleted from gitcode successfully!' + bcolors.ENDC)
+            logger.info(f'Repository: {repo_name} deleted from gitcode successfully!')
         else:
-            print(bcolors.FAIL + f'Failed to delete repository: {repo_name} from gitcode. Error {response.status_code}: {response.text}' + bcolors.ENDC)
+            logger.error(f'Failed to delete repository: {repo_name} from gitcode. Error {response.status_code}: {response.text}')
     
 
     def get_repo_list(self) -> list:
@@ -71,7 +71,7 @@ class GitcodeIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(bcolors.WARNING + f'push repo:{self.username}/{repo_name} to gitcode' + bcolors.ENDC)
+        logger.info(f'push repo:{self.username}/{repo_name} to gitcode')
         self.create_repo(repo_name)
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gitcode')
@@ -85,13 +85,13 @@ class GitcodeIE(BasePlatform):
         os.system('git remote remove origin_gitcode')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'push to gitcode success' + bcolors.ENDC)
+        logger.info(f'push to gitcode success')
 
     def pull(self, local_repo_path: str):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(bcolors.WARNING + f'pull repo:{self.username}/{repo_name} from gitcode' + bcolors.ENDC)
+        logger.info(f'pull repo:{self.username}/{repo_name} from gitcode')
         
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gitcode')
@@ -103,7 +103,7 @@ class GitcodeIE(BasePlatform):
         os.system('git remote remove origin_gitcode')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'pull from gitcode success' + bcolors.ENDC)
+        logger.info(f'pull from gitcode success')
     
     def _repo_exists(self, repo_name: str) -> bool:
         """ check if repo exists """
@@ -111,7 +111,7 @@ class GitcodeIE(BasePlatform):
         try:
             response = self.sess.get(url)
             if response.status_code == 200:
-                print(f'{bcolors.OKGREEN}repo: {repo_name} is existed. {bcolors.ENDC}')
+                logger.info(f'repo: {repo_name} is existed.')
                 return True
         except Exception as e:
             return False

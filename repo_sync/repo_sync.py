@@ -8,9 +8,9 @@
 '''
 import os,csv,re
 import logging
+from .utils.logger import logger
 from .platform import gen_extractor_classes
 from .models import Repo
-from repo_sync.utils.colors import bcolors
 
 class RepoSync(object):
     '''
@@ -20,11 +20,12 @@ class RepoSync(object):
 
     def __init__(self, params: dict, debug=False):
         self.args = None
-        self.logger = None
-        self.init_logger(debug)
+        
+        if debug:
+            logger.setLevel(logging.DEBUG)
 
         self.params = params
-        self.params['logger'] = self.logger
+        self.params['logger'] = logger
         self.platforms = []
         self.repos = []
         for p in gen_extractor_classes():
@@ -45,7 +46,7 @@ class RepoSync(object):
                     self._find_git_repo(path=current_path, repo_name=dir)
         with open(self.repo_list_path, 'w') as f:
             if len(self.repos) == 0:
-                print(f"{bcolors.WARNING}repo list is empty, please delete repo_list.csv and try again{bcolors.ENDC}")
+                logger.warning("repo list is empty, please delete repo_list.csv and try again")
                 return
             writer = csv.DictWriter(
                 f, fieldnames=self.repos[0].__dict__.keys(), lineterminator='\n'
@@ -68,7 +69,7 @@ class RepoSync(object):
                 repo.local_path = path
                 self.repos.append(repo)
         except Exception as e:
-            print(f"{bcolors.OKGREEN}skip {path} because of {e}{bcolors.ENDC}")
+            logger.info(f"skip {path} because of {e}")
 
     def run(self):
         '''
@@ -103,24 +104,7 @@ class RepoSync(object):
                         elif command == 'pull':
                             current_platform(username, token, host, self.params).pull(repo.local_path)
             else:
-                logging.info(
-                    'repo list is not exist, please run list_local command first'
-                )
-
-    def init_logger(self, debug:bool):
-        '''
-        init logger
-        '''
-        self.logger = logging.getLogger(__name__)
-        if debug:
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
+                logger.info('repo list is not exist, please run list_local command first')
 
     def update(self):
         '''

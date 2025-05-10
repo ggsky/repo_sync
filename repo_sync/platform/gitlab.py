@@ -13,7 +13,7 @@ import csv
 import subprocess
 from .base_platform import BasePlatform
 from repo_sync.models import Repo
-from repo_sync.utils.colors import bcolors
+from repo_sync.utils.logger import logger
 
 class GitlabIE(BasePlatform):
     """gitlab async"""
@@ -35,10 +35,10 @@ class GitlabIE(BasePlatform):
             }
             r = self.sess.post(url, data=json.dumps(payload))
             if r.status_code != 201:
-                print(f"{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}")
+                logger.error(f"create repo {repo_name} failed, status code {r.status_code}")
                 return
-            print(f"{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}")
-            print(f'{bcolors.OKGREEN}{self.host}/{self.username}/{repo_name}{bcolors.ENDC}')
+            logger.info(f"create repo {repo_name} success")
+            logger.info(f'{self.host}/{self.username}/{repo_name}')
             # for repo in self.repos:
             #     if repo.name == repo_name:
             #         repo.url = r.json()["web_url"]
@@ -58,22 +58,22 @@ class GitlabIE(BasePlatform):
                 url = f"{self.host}/api/v4/projects/{project_id}"
                 response = self.sess.delete(url)
                 if response.status_code == 202:
-                    print(f"{bcolors.OKGREEN}Repository: {repo_name} deleted from gitlab successfully!{bcolors.ENDC}")
+                    logger.info(f"Repository: {repo_name} deleted from gitlab successfully!")
                 else:
-                    print(
-                        f"{bcolors.FAIL}Failed to delete repository: {repo_name} from gitlab. Error {response.status_code}: {response.text}{bcolors.ENDC}"
+                    logger.error(
+                        f"Failed to delete repository: {repo_name} from gitlab. Error {response.status_code}: {response.text}"
                     )
             except Exception as e:
-                print(f"{bcolors.FAIL}Failed to delete repository: {repo_name} from gitlab. Error {e}, check repo is exist first.{bcolors.ENDC}")
+                logger.error(f"Failed to delete repository: {repo_name} from gitlab. Error {e}, check repo is exist first.")
         else:
-            print(f"{bcolors.FAIL}Failed to delete repository: {repo_name} from gitlab. Error {r.status_code}: {r.text}{bcolors.ENDC}")
+            logger.error(f"Failed to delete repository: {repo_name} from gitlab. Error {r.status_code}: {r.text}")
     
     def get_repo_list(self, username: str) -> list:
         """get repo list"""
         url = f"{self.host}/api/v4/users/{username}/projects"
         r = self.sess.get(url)
         if r.status_code != 200:
-            print(f"{bcolors.FAIL}get repo list failed, status code {r.status_code}{bcolors.ENDC}")
+            logger.error(f"get repo list failed, status code {r.status_code}")
             return []
         repo_list = []
         for res in r.json():
@@ -94,7 +94,7 @@ class GitlabIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f"{bcolors.OKGREEN}push repo:{self.username}/{repo_name} to gitlab{bcolors.ENDC}")
+        logger.info(f"pull repo:{self.username}/{repo_name} from gitlab")
         self.create_repo(repo_name)
         pur_host = re.search(r'(?<=//)[^/]+', self.host).group()
         os.chdir(local_repo_path)
@@ -108,7 +108,7 @@ class GitlabIE(BasePlatform):
         os.system(f'git pull origin_gitlab {current_branch}')
         os.system("git remote remove origin_gitlab")
         os.chdir("..")
-        print(f"{bcolors.OKGREEN}pull repo:{self.username}/{repo_name} from gitlab success{bcolors.ENDC}")
+        logger.info(f"pull repo:{self.username}/{repo_name} from gitlab success")
     
     def push(self, local_repo_path: str):
         """push a local repo to remote
@@ -118,7 +118,7 @@ class GitlabIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f"{bcolors.OKGREEN}push repo:{self.username}/{repo_name} to gitlab{bcolors.ENDC}")
+        logger.info(f"push repo:{self.username}/{repo_name} to gitlab")
         self.create_repo(repo_name)
         pur_host = re.search(r'(?<=//)[^/]+', self.host).group()
         os.chdir(local_repo_path)
@@ -133,7 +133,7 @@ class GitlabIE(BasePlatform):
         os.system(f"git push -u origin_gitlab {current_branch}")
         os.system("git remote remove origin_gitlab")
         os.chdir("..")
-        print(f"{bcolors.OKGREEN}push repo:{self.username}/{repo_name} to gitlab success{bcolors.ENDC}")
+        logger.info(f"push repo:{self.username}/{repo_name} to gitlab success")
     
     def clone(self):
         pass
@@ -147,7 +147,7 @@ class GitlabIE(BasePlatform):
         if r.status_code == 200:
             try:
                 project_id = r.json()[0]["id"]
-                print(f'{bcolors.OKGREEN}repo: {repo_name} is existed. {bcolors.ENDC}')
+                logger.info(f'repo: {repo_name} is existed.')
                 return True
             except Exception as e:
                 return False
