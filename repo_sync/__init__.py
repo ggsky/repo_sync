@@ -1,6 +1,7 @@
 from .repo_sync import RepoSync
 from .version import __version__
 from .options import parser_args
+from .utils.logger import logger
 import sys
 
 def main(argv=None):
@@ -8,7 +9,7 @@ def main(argv=None):
     try:
         args = parser_args()
         if args.get('version'):
-            print(__version__)
+            logger.info(__version__)
             sys.exit(0)
         if args.get('command', '') == '':
             # logging.error("command is empty")
@@ -17,4 +18,6 @@ def main(argv=None):
         rs = RepoSync(args)
         rs.run()
     except KeyboardInterrupt:
-        sys.exit('\nERROR: Interrupted by user')
+        logger.error('ERROR: Interrupted by user')
+        sys.exit(1)
+

@@ -14,6 +14,7 @@ from repo_sync.platform.base_platform import BasePlatform
 from .project import Project
 from .repo import Repo
 from repo_sync.utils.colors import bcolors
+from repo_sync.utils.logger import logger
 
 class CodingIE(BasePlatform):
     """coding util"""
@@ -44,10 +45,10 @@ class CodingIE(BasePlatform):
         r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             res_data = r.json()
-            print(bcolors.OKGREEN + 'Create project success' + bcolors.ENDC)
+            logger.info(f'Create project success: {res_data}')
             return True
         else:
-            print(bcolors.FAIL + 'Failed to create project' + bcolors.ENDC)
+            logger.error(f'Failed to create project: {r.text}')
             return False
     
     def delete_project(self):
@@ -58,10 +59,10 @@ class CodingIE(BasePlatform):
         r = self.sess.post(self.url, json=data)
         if r.status_code == 200:
             res_data = r.json()
-            print(bcolors.OKGREEN + 'Delete project success' + bcolors.ENDC)
+            logger.info(f'Delete project success: {res_data}')
             return True
         else:
-            print(bcolors.FAIL + 'Failed to delete project' + bcolors.ENDC)
+            logger.error(f'Failed to delete project: {r.text}')
             return False
     
     def get_project_list(self):
@@ -134,9 +135,9 @@ class CodingIE(BasePlatform):
                         currentPage += 1
                     return DepotList
                 else:
-                    print(bcolors.WARNING + f'Cannot find repo in project {self.project_name}' + bcolors.ENDC)
+                    logger.warning(f'Cannot find repo in project {self.project_name}')
             except Exception as e:
-                print(bcolors.FAIL + str(e) + bcolors.ENDC)
+                logger.error(f'Error retrieving repo list: {str(e)}')
         
     def _repo_exists(self, repo_name: str):
         """get repo list"""
@@ -170,14 +171,14 @@ class CodingIE(BasePlatform):
                             )
                         break
                     if depot is None:
-                        print(bcolors.WARNING + f'Cannot find repo {repo_name} in project {self.project_name}' + bcolors.ENDC)
+                        logger.warning(f'Cannot find repo {repo_name} in project {self.project_name}')
                     else:
-                        print(bcolors.OKGREEN + f'Find repo {repo_name} in project {self.project_name}' + bcolors.ENDC)
+                        logger.info(f'Find repo {repo_name} in project {self.project_name}')
                     return depot
                 else:
-                    print(bcolors.WARNING + f'Cannot find repo {repo_name} in project {self.project_name}' + bcolors.ENDC)
+                    logger.warning(f'Cannot find repo {repo_name} in project {self.project_name}')
             except Exception as e:
-                print(bcolors.FAIL + f'Cannot find repo {repo_name} in project {self.project_name}: {str(e)}' + bcolors.ENDC)
+                logger.error(f'Cannot find repo {repo_name} in project {self.project_name}: {str(e)}')
     
     def get_project_info(self) -> Project:
         data = {
@@ -203,8 +204,8 @@ class CodingIE(BasePlatform):
                     )
                     return project
             except Exception as e:
-                print(bcolors.FAIL + 'Error retrieving project info: ' + str(e) + bcolors.ENDC)
-                print(bcolors.FAIL + str(res_data) + bcolors.ENDC)
+                logger.error(f'Error retrieving project info: {str(e)}')
+                logger.error(f'{res_data}')
     
     def create_repo(self, repo_name: str):
         """create a repo"""
@@ -222,14 +223,14 @@ class CodingIE(BasePlatform):
                 }
                 r = self.sess.post(self.url, json=data)
                 if r.status_code == 200:
-                    print(bcolors.OKGREEN + f'Create repo {repo_name} success' + bcolors.ENDC)
-                    print(bcolors.OKGREEN + f'https://e.coding.net/{self.username}/{self.project_name}/{repo_name}' + bcolors.ENDC)
+                    logger.info(f'Create repo {repo_name} success')
+                    logger.info(f'https://e.coding.net/{self.username}/{self.project_name}/{repo_name}')
                     return True
                 else:
-                    print(bcolors.FAIL + 'Failed to create repo' + bcolors.ENDC)
+                    logger.error(f'Failed to create repo')
                     return False
         else:
-            print(bcolors.FAIL + f"Project: {self.project_name} does not exist, cannot create repo in it." + bcolors.ENDC)
+            logger.error(f"Project: {self.project_name} does not exist, cannot create repo in it.")
     
     def delete(self, repo_name: str):
             """delete a repo"""
@@ -241,7 +242,7 @@ class CodingIE(BasePlatform):
                     }
                 r = self.sess.post(self.url, json=data)
                 if r.status_code == 200:
-                    print(f'{bcolors.OKGREEN}delete repo {repo_name} success{bcolors.ENDC}', data, r.json())
+                    logger.info(f'delete repo {repo_name} success')
                     return True
                 else:
                     return False
@@ -253,7 +254,7 @@ class CodingIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'{bcolors.OKGREEN} pull repo:{self.username}/{repo_name} from coding{bcolors.ENDC}')
+        logger.info(f'pull repo:{self.username}/{repo_name} from coding')
         os.chdir(local_repo_path)
         try:
             os.system('git remote remove origin_coding')
@@ -268,7 +269,7 @@ class CodingIE(BasePlatform):
         os.system(f'git pull origin_coding {current_branch}')
         os.system('git remote remove origin_coding')
         os.chdir('..')
-        print(f'{bcolors.OKGREEN}pull from coding success{bcolors.ENDC}')
+        logger.info(f'pull from coding success')
 
     def push(self, local_repo_path: str):
         ''' push a local repo to remote
@@ -279,7 +280,7 @@ class CodingIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'{bcolors.OKGREEN}push repo:{self.username}/{repo_name} to coding{bcolors.ENDC}')
+        logger.info(f'push repo:{self.username}/{repo_name} to coding')
         self.create_repo(repo_name=repo_name)
         os.chdir(local_repo_path)
 
@@ -295,7 +296,7 @@ class CodingIE(BasePlatform):
         os.system(f'git push -u origin_coding {current_branch}')
         os.system('git remote remove origin_coding')
         os.chdir('..')
-        print(f'{bcolors.OKGREEN}push to coding success{bcolors.ENDC}')
+        logger.info(f'push to coding success')
 
     def clone(self, repo_path: str):
         ''' clone all repo from remote
@@ -305,9 +306,8 @@ class CodingIE(BasePlatform):
         for repo in repos:
             try:
                 cmd = f'git clone https://{self.username}:{self.token}@e.coding.net/{self.username}/{self.project_name}/{repo["Name"]}.git {repo_path}/{repo["Name"]}'
-                # print(cmd)
                 os.system(cmd)
-                print(f'{bcolors.OKGREEN}clone success{bcolors.ENDC}')
+                logger.info(f'clone success')
             except Exception as e:
                 pass
 

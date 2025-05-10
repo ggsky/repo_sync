@@ -10,7 +10,7 @@ from .base_platform import BasePlatform
 import csv, re, subprocess
 import json, os
 from repo_sync.utils.colors import bcolors
-
+from repo_sync.utils.logger import logger
 class GogsIE(BasePlatform):
     """ gogs plotform class """
     gityoqi_repo_list = 'gityoqi_repo_list.csv'
@@ -33,10 +33,10 @@ class GogsIE(BasePlatform):
         }
         r = self.sess.post(url, data=json.dumps(payload))
         if r.status_code != 201:
-            print(bcolors.FAIL + f'create org repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
+            logger.error(f'create org repo {repo_name} failed, status code {r.status_code}')
             return
-        print(bcolors.OKGREEN + f'create org repo {repo_name} success' + bcolors.ENDC)
-        print(f'{bcolors.OKGREEN}{self._host}/{org_name}/{repo_name}{bcolors.ENDC}')
+        logger.info(f'create org repo {repo_name} success')
+        logger.info(f'{self._host}/{org_name}/{repo_name}')
         
     def create_repo(self, repo_name: str):
         """create a repo"""
@@ -52,28 +52,28 @@ class GogsIE(BasePlatform):
         }
         r = self.sess.post(url, data=json.dumps(payload))
         if r.status_code != 201:
-            print(bcolors.FAIL + f'create repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
+            logger.error(f'create repo {repo_name} failed, status code {r.status_code}')
             return
-        print(bcolors.OKGREEN + f'create repo {repo_name} success' + bcolors.ENDC)
+        logger.info(f'create repo {repo_name} success')
 
     def delete(self, repo_name: str):
         """delete a repo, maybe request a confirm by input"""
         url = f'{self._host}/api/v1/repos/{self.username}/{repo_name}'
         r = self.sess.delete(url)
         if r.status_code != 204:
-            print(bcolors.FAIL + f'delete repo {repo_name} failed, status code {r.status_code}' + bcolors.ENDC)
+            logger.error(f'delete repo {repo_name} failed, status code {r.status_code}')
             return
-        print(bcolors.OKGREEN + f'delete repo {repo_name} success' + bcolors.ENDC)
+        logger.info(f'delete repo {repo_name} success')
 
     def get_repo_list(self, repo_name: str):
         """get repo list"""
         url = f'{self._host}/api/v1/users/{self.username}/repos'
         r = self.sess.get(url)
         if r.status_code != 200:
-            print(bcolors.FAIL + f'get repo list failed, status code {r.status_code}' + bcolors.ENDC)
+            logger.error(f'get repo list failed, status code {r.status_code}')
             return
         self.repos = r.json()
-        print(bcolors.OKGREEN + 'get repo list success' + bcolors.ENDC)
+        logger.info(f'get repo list success')
 
     def clone(self):
         pass
@@ -82,7 +82,7 @@ class GogsIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'{bcolors.WARNING}pull repo:{self.username}/{repo_name} from {self._host}{bcolors.ENDC}')
+        logger.info(f'pull repo:{self.username}/{repo_name} from {self._host}')
         pur_host = re.search(r'(?<=//)[^/]+', self._host).group()
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gogs')
@@ -100,7 +100,7 @@ class GogsIE(BasePlatform):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f'{bcolors.WARNING}push repo:{self.username}/{repo_name} to {self._host}{bcolors.ENDC}')
+        logger.info(f'push repo:{self.username}/{repo_name} to {self._host}')
         pur_host = re.search(r'(?<=//)[^/]+', self._host).group()
         os.chdir(local_repo_path)
         os.system('git remote remove origin_gogs')

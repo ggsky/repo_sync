@@ -9,7 +9,7 @@
 from .base_platform import BasePlatform
 from repo_sync.utils.colors import bcolors
 import os, subprocess,json
-
+from repo_sync.utils.logger import logger
 
 class CnbIE(BasePlatform):
     """ cnb platform """
@@ -33,29 +33,28 @@ class CnbIE(BasePlatform):
              "visibility": "private" if self.repo_private else "public"
              })
             if response.status_code == 201:
-                print(bcolors.OKGREEN + f'create repo {self.group}/{repo_name} success' + bcolors.ENDC)
+                logger.info(f'create repo {self.group}/{repo_name} success')
             else:
-                print(bcolors.FAIL + f'create repo {self.group}/{repo_name} failed. {response.text}' + bcolors.ENDC)
+                logger.error(f'create repo {self.group}/{repo_name} failed. {response.text}')
         else:
-            print(bcolors.WARNING + f'repo {self.group}/{repo_name} already exists' + bcolors.ENDC)
+            logger.warning(f'repo {self.group}/{repo_name} already exists')
 
     def delete(self, repo_name: str):
         """ delete a repo """
         url = f'{self._api}/{self.group}/{repo_name}'
         response = self.sess.delete(url)
         if response.status_code == 200:
-            print(bcolors.OKGREEN + f'delete repo {self.group}/{repo_name} success' + bcolors.ENDC)
+            logger.info(f'delete repo {self.group}/{repo_name} success')
         else:
-            print(bcolors.FAIL + f'delete repo {self.group}/{repo_name} failed. {response.text}' + bcolors.ENDC)
+            logger.error(f'delete repo {self.group}/{repo_name} failed. {response.text}')
             return
-        print(bcolors.OKGREEN + f'create repo {self.group}/{repo_name} success' + bcolors.ENDC)
-        print(f'{bcolors.OKGREEN}{self._host}/{self.group}/{repo_name}{bcolors.ENDC}')
+        logger.info(f'{self._host}/{self.group}/{repo_name}')
             
     def push(self, local_repo_path: str):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(bcolors.WARNING + f'push repo:{self.group}/{repo_name} to cnb' + bcolors.ENDC)
+        logger.info(f'push repo:{self.group}/{repo_name} to cnb')
         self.create_repo(repo_name)
         os.chdir(local_repo_path)
         os.system('git remote remove origin_cnb')
@@ -69,13 +68,13 @@ class CnbIE(BasePlatform):
         os.system('git remote remove origin_cnb')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'push to cnb success' + bcolors.ENDC)
+        logger.info(f'push to cnb success')
 
     def pull(self, local_repo_path: str):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(bcolors.WARNING + f'pull repo:{self.group}/{repo_name} from cnb' + bcolors.ENDC)
+        logger.info(f'pull repo:{self.group}/{repo_name} from cnb')
         
         os.chdir(local_repo_path)
         os.system('git remote remove origin_cnb')
@@ -87,7 +86,7 @@ class CnbIE(BasePlatform):
         os.system('git remote remove origin_cnb')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'pull from cnb success' + bcolors.ENDC)
+        logger.info(f'pull from cnb success')
     
 
     def _repo_exists(self, repo_name: str) -> bool:
@@ -96,7 +95,7 @@ class CnbIE(BasePlatform):
         try:
             response = self.sess.get(url)
             if response.status_code == 200:
-                print(f'{bcolors.OKGREEN}repo: {repo_name} is existed. {bcolors.ENDC}')
+                logger.info(f'repo: {repo_name} is existed.')
                 return True
         except Exception as e:
             return False
