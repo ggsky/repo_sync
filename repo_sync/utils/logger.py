@@ -1,31 +1,23 @@
 import logging
-from termcolor import colored
+from colorama import Fore, Style
+import colorama
+colorama.init()
 
 class ColoredFormatter(logging.Formatter):
+    COLOR_MAP = {
+        logging.DEBUG: Fore.BLUE,
+        logging.INFO: Fore.GREEN,
+        logging.WARNING: Fore.YELLOW,
+        logging.ERROR: Fore.RED,
+        logging.CRITICAL: Fore.MAGENTA
+    }
     def format(self, record):
-        # 保留原始消息不变
-        import colorama
-        colorama.init()    # 解决windows cmd 颜色显示问题
-        original_msg = record.msg
-        if record.levelno == logging.DEBUG:
-            record.msg = colored(record.msg, 'blue')
-        elif record.levelno == logging.INFO:
-            record.msg = colored(record.msg, 'green')
-        elif record.levelno == logging.WARNING:
-            record.msg = colored(record.msg, 'yellow')
-        elif record.levelno == logging.ERROR:
-            record.msg = colored(record.msg, 'red')
-        elif record.levelno == logging.CRITICAL:
-            record.msg = colored(record.msg, 'magenta')
-        
-        # 调用父类格式化方法
-        formatted_message = super().format(record)
-        
-        # 恢复原始消息
-        record.msg = original_msg
-        
-        return formatted_message
-
+        msg = record.getMessage()
+        color = self.COLOR_MAP.get(record.levelno, '')
+        msg = color + msg + Style.RESET_ALL
+        record.message = msg
+        return super().format(record)
+    
 # Configure logger
 logger = logging.getLogger('repo_sync')
 logger.setLevel(logging.INFO)

@@ -2,4 +2,4 @@ requests==2.27.1
 python-dotenv==1.0.0
 PyQt5
 pywin32
-termcolor==2.3.0
+colorama
