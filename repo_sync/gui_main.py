@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QApplication, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QRadioButton, QPushButton, QButtonGroup, QGroupBox, QMessageBox, 
     QLineEdit, QScrollArea, QFileDialog, QFormLayout, QCheckBox, QTextEdit,
-    QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton
+    QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton, QListWidget, QListWidgetItem
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QObject
 from repo_sync import RepoSync, __version__
@@ -298,16 +298,12 @@ class SettingsTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.init_ui()
-        self.load_settings()
 
     def init_ui(self):
         layout = QVBoxLayout()
         
-        # 创建滚动区域
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        content = QWidget()
-        content_layout = QVBoxLayout()
+        # 创建平台选择标签页
+        self.platform_tabs = QTabWidget()
         
         # 平台配置
         self.platform_configs = {
@@ -321,90 +317,141 @@ class SettingsTab(QWidget):
             "cnb": ["username", "token", "private"]
         }
         
-        # 为每个平台创建分组
-        self.platform_groups = {}
+        # 为每个平台创建标签页
+        self.platform_pages = {}
         for platform in self.platform_configs.keys():
-            group = QGroupBox(platform.capitalize())
-            group_layout = QVBoxLayout()
+            page = QWidget()
+            page_layout = QVBoxLayout()
             
-            # 账户选择和管理
-            account_header = QHBoxLayout()
-            account_header.addWidget(QLabel("Accounts:"))
-            account_combo = QComboBox()
-            account_combo.setMinimumWidth(200)
-            account_header.addWidget(account_combo)
+            # 账户管理区域
+            account_group = QGroupBox("账户管理")
+            account_layout = QVBoxLayout()
             
-            # 添加账户按钮
-            add_btn = QToolButton()
-            add_btn.setText("+")
-            add_btn.clicked.connect(lambda checked, p=platform: self.add_account(p))
-            account_header.addWidget(add_btn)
+            # 账户列表
+            accounts_list_layout = QHBoxLayout()
             
-            # 删除账户按钮
-            del_btn = QToolButton()
-            del_btn.setText("-")
-            del_btn.clicked.connect(lambda checked, p=platform, c=account_combo: self.delete_account(p, c))
-            account_header.addWidget(del_btn)
+            # 左侧：账户列表
+            self.account_lists = {}
+            account_list = QListWidget()
+            account_list.setMinimumWidth(200)
+            account_list.itemClicked.connect(lambda item, p=platform: self.select_account(p, item))
+            account_list.setStyleSheet("""
+                QListWidget::item:selected { background-color: #a6d8ff; }
+                QListWidget::item[enabled="true"] { font-weight: bold; color: #0066cc; }
+            """)
+            accounts_list_layout.addWidget(account_list)
+            self.account_lists[platform] = account_list
             
-            # 启用账户按钮
-            enable_btn = QPushButton("Enable")
-            enable_btn.clicked.connect(lambda checked, p=platform, c=account_combo: self.enable_account(p, c))
-            account_header.addWidget(enable_btn)
-            
-            group_layout.addLayout(account_header)
-            
-            # 账户详情区域
+            # 右侧：账户详情
             account_details = QWidget()
             account_form = QFormLayout()
             account_details.setLayout(account_form)
-            group_layout.addWidget(account_details)
+            accounts_list_layout.addWidget(account_details, 1)
             
-            group.setLayout(group_layout)
-            content_layout.addWidget(group)
+            account_layout.addLayout(accounts_list_layout)
             
-            # 保存引用
-            self.platform_groups[platform] = {
-                "group": group,
-                "combo": account_combo,
-                "details": account_details,
-                "form": account_form
+            # 账户操作按钮
+            buttons_layout = QHBoxLayout()
+            add_btn = QPushButton("添加账户")
+            add_btn.clicked.connect(lambda checked=False, p=platform: self.add_account(p))
+            delete_btn = QPushButton("删除账户")
+            delete_btn.clicked.connect(lambda checked=False, p=platform: self.delete_account(p))
+            enable_btn = QPushButton("设为启用")
+            enable_btn.clicked.connect(lambda checked=False, p=platform: self.enable_account(p))
+            
+            buttons_layout.addWidget(add_btn)
+            buttons_layout.addWidget(delete_btn)
+            buttons_layout.addWidget(enable_btn)
+            buttons_layout.addStretch()
+            
+            account_layout.addLayout(buttons_layout)
+            account_group.setLayout(account_layout)
+            page_layout.addWidget(account_group)
+            
+            # 保存页面引用
+            self.platform_pages[platform] = {
+                "page": page,
+                "form": account_form,
+                "details": account_details
             }
+            
+            page.setLayout(page_layout)
+            self.platform_tabs.addTab(page, platform.capitalize())
         
-        content.setLayout(content_layout)
-        scroll.setWidget(content)
-        layout.addWidget(scroll)
+        layout.addWidget(self.platform_tabs)
         
         # 保存按钮
-        self.save_btn = QPushButton("Save Settings")
+        self.save_btn = QPushButton("保存设置")
         self.save_btn.clicked.connect(self.save_settings)
         layout.addWidget(self.save_btn, alignment=Qt.AlignCenter)
         
         self.setLayout(layout)
+        
+        # 加载设置
+        self.load_settings()
+        
+        # 连接标签页变更事件
+        self.platform_tabs.currentChanged.connect(self.tab_changed)
+
+    def tab_changed(self, index):
+        platform = list(self.platform_configs.keys())[index]
+        self.update_account_details(platform)
 
     def load_settings(self):
         # 读取.env文件
         env_values = dotenv_values(find_dotenv())
         
         # 为每个平台加载账户
-        for platform, group_data in self.platform_groups.items():
-            combo = group_data["combo"]
-            combo.clear()
+        for platform in self.platform_configs.keys():
+            account_list = self.account_lists[platform]
+            account_list.clear()
             
             # 查找该平台的所有账户
             accounts = self.get_platform_accounts(platform, env_values)
             
-            # 添加到下拉框
+            # 添加到列表
             for account in accounts:
-                combo.addItem(account)
+                item = QListWidgetItem(account)
+                # 标记默认账户
+                if account == "default":
+                    item.setData(Qt.UserRole, "default")
+                    # 检查是否有其他账户被设为启用
+                    is_enabled = True
+                    for other_account in accounts:
+                        if other_account != "default" and self.is_account_enabled(platform, other_account, env_values):
+                            is_enabled = False
+                            break
+                    item.setData(Qt.UserRole + 1, is_enabled)
+                else:
+                    item.setData(Qt.UserRole, account)
+                    item.setData(Qt.UserRole + 1, self.is_account_enabled(platform, account, env_values))
+                
+                # 设置启用状态的显示
+                if item.data(Qt.UserRole + 1):
+                    item.setData(Qt.UserRole + 2, "true")
+                    item.setText(f"{account} (启用中)")
+                
+                account_list.addItem(item)
             
-            # 连接选择变更事件
-            combo.currentIndexChanged.connect(
-                lambda idx, p=platform: self.update_account_details(p)
-            )
-            
-            # 更新当前选择的账户详情
-            if combo.count() > 0:
-                self.update_account_details(platform)
+            # 选择第一个账户
+            if account_list.count() > 0:
+                account_list.setCurrentRow(0)
+                self.select_account(platform, account_list.item(0))
+
+    def is_account_enabled(self, platform, account, env_values=None):
+        """检查账户是否被设为启用"""
+        if env_values is None:
+            env_values = dotenv_values(find_dotenv())
+        
+        if account == "default":
+            # 默认账户，检查是否有其他账户被设为启用
+            for key in env_values.keys():
+                if key.startswith(f"{platform}_") and "_enabled" in key and env_values[key].lower() == "true":
+                    return False
+            return True
+        else:
+            # 其他账户，检查是否有enabled标记
+            return env_values.get(f"{platform}_{account}_enabled", "").lower() == "true"
 
     def get_platform_accounts(self, platform, env_values=None):
         if env_values is None:
@@ -419,24 +466,21 @@ class SettingsTab(QWidget):
         for key in env_values.keys():
             if key.startswith(prefix) and "_" in key[len(prefix):]:
                 account_name = key[len(prefix):].split("_")[0]
-                if account_name != "default":
+                if account_name != "default" and account_name != "":
                     accounts.add(account_name)
         
         return sorted(list(accounts))
 
-    def update_account_details(self, platform):
-        group_data = self.platform_groups[platform]
-        combo = group_data["combo"]
-        form = group_data["form"]
+    def select_account(self, platform, item):
+        if not item:
+            return
+        
+        account = item.data(Qt.UserRole)
+        form = self.platform_pages[platform]["form"]
         
         # 清空表单
         while form.rowCount() > 0:
             form.removeRow(0)
-        
-        # 获取当前选择的账户
-        account = combo.currentText()
-        if not account:
-            return
         
         # 读取账户配置
         env_values = dotenv_values(find_dotenv())
@@ -488,13 +532,22 @@ class SettingsTab(QWidget):
             self.load_settings()
             
             # 选择新账户
-            combo = self.platform_groups[platform]["combo"]
-            idx = combo.findText(account_name)
-            if idx >= 0:
-                combo.setCurrentIndex(idx)
+            account_list = self.account_lists[platform]
+            for i in range(account_list.count()):
+                if account_list.item(i).data(Qt.UserRole) == account_name:
+                    account_list.setCurrentRow(i)
+                    self.select_account(platform, account_list.item(i))
+                    break
 
-    def delete_account(self, platform, combo):
-        account = combo.currentText()
+    def delete_account(self, platform):
+        account_list = self.account_lists[platform]
+        current_item = account_list.currentItem()
+        
+        if not current_item:
+            return
+            
+        account = current_item.data(Qt.UserRole)
+        
         if account == "default":
             QMessageBox.warning(self, "Warning", "Cannot delete the default account.")
             return
@@ -524,34 +577,57 @@ class SettingsTab(QWidget):
             # 重新加载设置
             self.load_settings()
 
-    def enable_account(self, platform, combo):
-        account = combo.currentText()
-        if account == "default":
-            QMessageBox.information(self, "Information", "Default account is already enabled.")
+    def enable_account(self, platform):
+        account_list = self.account_lists[platform]
+        current_item = account_list.currentItem()
+        
+        if not current_item:
             return
+            
+        account = current_item.data(Qt.UserRole)
         
         # 读取账户配置
         env_file = find_dotenv()
         env_values = dotenv_values(env_file)
         
-        # 获取账户配置
-        account_config = {}
-        prefix = f"{platform}_{account}_"
-        for key, value in env_values.items():
-            if key.startswith(prefix):
-                field = key[len(prefix):]
-                account_config[field] = value
+        # 先清除所有账户的启用状态
+        for key in list(env_values.keys()):
+            if key.startswith(f"{platform}_") and key.endswith("_enabled"):
+                del env_values[key]
         
-        # 更新默认配置
-        for field, value in account_config.items():
-            default_key = f"{platform}_{field}"
-            set_key(env_file, default_key, value)
+        # 设置当前账户为启用
+        if account != "default":
+            set_key(env_file, f"{platform}_{account}_enabled", "true")
+            
+            # 将账户配置复制到默认配置
+            account_config = {}
+            prefix = f"{platform}_{account}_"
+            for key, value in env_values.items():
+                if key.startswith(prefix):
+                    field = key[len(prefix):]
+                    if field != "enabled":  # 不复制enabled标记
+                        account_config[field] = value
+            
+            # 更新默认配置
+            for field, value in account_config.items():
+                default_key = f"{platform}_{field}"
+                set_key(env_file, default_key, value)
         
         QMessageBox.information(
             self, 
             "Success", 
-            f"Account '{account}' has been enabled as the default for {platform}."
+            f"Account '{account}' has been enabled for {platform}."
         )
+        
+        # 重新加载设置
+        self.load_settings()
+
+    def update_account_details(self, platform):
+        account_list = self.account_lists[platform]
+        current_item = account_list.currentItem()
+        
+        if current_item:
+            self.select_account(platform, current_item)
 
     def save_settings(self):
         env_file = find_dotenv()
@@ -559,22 +635,28 @@ class SettingsTab(QWidget):
             env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
         
         # 保存当前显示的账户配置
-        for platform, group_data in self.platform_groups.items():
-            combo = group_data["combo"]
-            account = combo.currentText()
+        platform = list(self.platform_configs.keys())[self.platform_tabs.currentIndex()]
+        account_list = self.account_lists[platform]
+        current_item = account_list.currentItem()
+        
+        if current_item and hasattr(self, 'field_widgets'):
+            account = current_item.data(Qt.UserRole)
             
-            if account and hasattr(self, 'field_widgets'):
-                for key, widget in self.field_widgets.items():
-                    if key.startswith(f"{platform}_{account}"):
-                        if isinstance(widget, QCheckBox):
-                            value = str(widget.isChecked()).lower()
-                        else:
-                            value = widget.text().strip()
-                        
-                        if value:
-                            set_key(env_file, key, value)
+            for key, widget in self.field_widgets.items():
+                if key.startswith(f"{platform}_{account}"):
+                    if isinstance(widget, QCheckBox):
+                        value = str(widget.isChecked()).lower()
+                    else:
+                        value = widget.text().strip()
+                    
+                    if value:
+                        set_key(env_file, key, value)
         
         QMessageBox.information(self, "Success", "Settings saved successfully!")
+        
+        # 如果修改的是启用的账户，更新默认配置
+        if current_item and current_item.data(Qt.UserRole + 1):
+            self.enable_account(platform)
 
 class AboutTab(QWidget):
     def __init__(self, parent=None):
