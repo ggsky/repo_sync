@@ -9,14 +9,13 @@ read docs:
 https://help.aliyun.com/document_detail/460450.html?spm=a2c4g.460449.0.0.4cc62367VCclNI
 '''
 
-from traceback import print_tb
 from repo_sync.platform.base_platform import BasePlatform
 import csv,subprocess
 import os
 from repo_sync.models import Repo
 from repo_sync.utils.colors import bcolors
 import json
-
+from repo_sync.utils.logger import logger
 class AliyunDevOpsIE(BasePlatform):
     """aliyun devops"""
 
@@ -37,7 +36,7 @@ class AliyunDevOpsIE(BasePlatform):
         url = f'{self._api}/codeup/organizations/{self.companyId}/repositories/{repo_name}'
         r = self.sess.get(url)
         if r.status_code != 200:
-            print(f"{bcolors.FAIL}get repo info failed, status code {r.status_code}{bcolors.ENDC}")
+            logger.error(f'get repo info failed, status code {r.status_code}')
             return False
         return True
 
@@ -53,15 +52,15 @@ class AliyunDevOpsIE(BasePlatform):
             r = self.sess.post(url, data=json.dumps(form_data))
             # r = self.sess.post(url, json=json.dumps(form_data))
             if r.status_code != 200:
-                print(f"{bcolors.FAIL}create repo {repo_name} failed, status code {r.status_code}{bcolors.ENDC}")
-                print(f"{bcolors.FAIL}response: {r.text}{bcolors.ENDC}")
+                logger.error(f'create repo {repo_name} failed, status code {r.status_code}')
+                logger.error(f'response: {r.text}')
                 return False
-            print(f"{bcolors.OKGREEN}create repo {repo_name} success{bcolors.ENDC}")
-            print(f"{bcolors.OKGREEN}https://codeup.aliyun.com/{self.companyId}/{repo_name}{bcolors.ENDC}")
+            logger.info(f'create repo {repo_name} success')
+            logger.info(f'https://codeup.aliyun.com/{self.companyId}/{repo_name}')
             return True
         else:
-            print(f"{bcolors.OKGREEN}repo {repo_name} already exists{bcolors.ENDC}")
-            print(f"{bcolors.OKGREEN}https://codeup.aliyun.com/{self.companyId}/{repo_name}{bcolors.ENDC}")
+            logger.info(f'repo {repo_name} already exists')
+            logger.info(f'https://codeup.aliyun.com/{self.companyId}/{repo_name}')
             return True 
 
     def delete(self, repo_name: str):
@@ -71,15 +70,15 @@ class AliyunDevOpsIE(BasePlatform):
 
             response = self.sess.delete(url)
             if response.status_code == 200:
-                print(f"{bcolors.OKGREEN}Project: {repo_name} deleted from aliyun successfully!{bcolors.ENDC}")
+                logger.info(f'Project: {repo_name} deleted from aliyun successfully!')
             else:
-                print(f'{bcolors.FAIL}Failed to delete project: {repo_name} from aliyun. Error {response.status_code}: {response.text}{bcolors.ENDC}')
+                logger.error(f'Failed to delete project: {repo_name} from aliyun. Error {response.status_code}: {response.text}')
     
     def pull(self, local_repo_path: str):
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(f"{bcolors.OKGREEN}pull repo:{self.username}/{repo_name} from aliyun{bcolors.ENDC}")
+        logger.info(f'pull repo:{self.username}/{repo_name} from aliyun')
         os.chdir(local_repo_path)
 
         os.system('git remote remove origin_aliyun')
@@ -90,14 +89,14 @@ class AliyunDevOpsIE(BasePlatform):
         os.system('git remote remove origin_aliyun')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'pull from aliyun success' + bcolors.ENDC)
+        logger.info(f'pull from aliyun success')
 
     def push(self, local_repo_path: str):
         """ push local repo to aliyun"""
         if local_repo_path[-1] == os.path.sep:
             local_repo_path = local_repo_path[:-1]
         repo_name = local_repo_path.split(os.path.sep)[-1]
-        print(bcolors.WARNING + f'push repo:{self.username}/{repo_name} to aliyun' + bcolors.ENDC)
+        logger.info(f'push repo:{self.username}/{repo_name} to aliyun')
         self.create_repo(repo_name)
         os.chdir(local_repo_path)
         os.system('git remote remove origin_aliyun')
@@ -111,7 +110,7 @@ class AliyunDevOpsIE(BasePlatform):
         os.system('git remote remove origin_aliyun')
         os.chdir('..')
         
-        print(bcolors.OKGREEN + 'push to aliyun success' + bcolors.ENDC)
+        logger.info(f'push to aliyun success')
 
 
     def clone(self):
