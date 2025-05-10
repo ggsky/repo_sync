@@ -48,7 +48,6 @@ class CnbIE(BasePlatform):
         else:
             print(bcolors.FAIL + f'delete repo {self.group}/{repo_name} failed. {response.text}' + bcolors.ENDC)
             return
-        print(bcolors.OKGREEN + f'create repo {self.group}/{repo_name} success' + bcolors.ENDC)
         print(f'{bcolors.OKGREEN}{self._host}/{self.group}/{repo_name}{bcolors.ENDC}')
             
     def push(self, local_repo_path: str):
