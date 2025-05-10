@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+'''
+@Contact :   liuyuqi.gov@msn.cn
+@Time    :   2023/04/27 02:55:59
+@License :   Copyright © 2017-2022 liuyuqi. All Rights Reserved.
+@Desc    :   repo_sync GUI入口
+'''
 import sys
 import os
 import threading
@@ -15,10 +23,45 @@ except ImportError:
     HAS_QT = False
     print("PyQt5 not installed, GUI mode not available")
 
-from repo_sync import RepoSync, __version__
-from dotenv import load_dotenv, set_key, find_dotenv, dotenv_values
+# 直接导入repo_sync模块
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from repo_sync.repo_sync import RepoSync
+    from repo_sync.version import __version__
+except ImportError:
+    print("无法导入repo_sync模块，尝试直接导入...")
+    try:
+        from repo_sync import RepoSync
+        from repo_sync.version import __version__
+    except ImportError:
+        print("导入repo_sync模块失败，请确保repo_sync已正确安装")
+        __version__ = "未知"
+        
+        # 创建一个空的RepoSync类作为替代
+        class RepoSync:
+            def __init__(self, params):
+                self.params = params
+            def run(self):
+                print("RepoSync模块未找到，无法执行操作")
+
+try:
+    from dotenv import load_dotenv, set_key, find_dotenv, dotenv_values
+except ImportError:
+    print("python-dotenv未安装，请使用pip install python-dotenv安装")
+    sys.exit(1)
+    
 import json
 import uuid
+
+# 确保.env文件存在
+def ensure_env_file():
+    env_file = find_dotenv()
+    if not env_file:
+        # 创建空的.env文件
+        env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+        with open(env_file, 'w') as f:
+            f.write("# repo_sync配置文件\n")
+    return env_file
 
 # Explorer路径获取
 try:
@@ -334,6 +377,10 @@ class AddAccountDialog(QDialog):
 class SettingsTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        # 确保.env文件存在
+        ensure_env_file()
+        # 初始化account_lists字典
+        self.account_lists = {}
         self.init_ui()
 
     def init_ui(self):
@@ -368,7 +415,6 @@ class SettingsTab(QWidget):
             accounts_list_layout = QHBoxLayout()
             
             # 左侧：账户列表
-            self.account_lists = {}
             account_list = QListWidget()
             account_list.setMinimumWidth(200)
             account_list.itemClicked.connect(lambda item, p=platform: self.select_account(p, item))
@@ -425,7 +471,12 @@ class SettingsTab(QWidget):
         self.setLayout(layout)
         
         # 加载设置
-        self.load_settings()
+        try:
+            self.load_settings()
+        except Exception as e:
+            print(f"加载设置时出错: {e}")
+            import traceback
+            traceback.print_exc()
         
         # 连接标签页变更事件
         self.platform_tabs.currentChanged.connect(self.tab_changed)
@@ -443,44 +494,59 @@ class SettingsTab(QWidget):
 
     def load_settings(self):
         # 读取.env文件
-        env_values = dotenv_values(find_dotenv())
-        
-        # 为每个平台加载账户
-        for platform in self.platform_configs.keys():
-            account_list = self.account_lists[platform]
-            account_list.clear()
-            
-            # 查找该平台的所有账户
-            accounts = self.get_platform_accounts(platform, env_values)
-            
-            # 添加到列表
-            for account in accounts:
-                item = QListWidgetItem(account)
-                # 标记默认账户
-                if account == "default":
-                    item.setData(Qt.UserRole, "default")
-                    # 检查是否有其他账户被设为启用
-                    is_enabled = True
-                    for other_account in accounts:
-                        if other_account != "default" and self.is_account_enabled(platform, other_account, env_values):
-                            is_enabled = False
-                            break
-                    item.setData(Qt.UserRole + 1, is_enabled)
-                else:
-                    item.setData(Qt.UserRole, account)
-                    item.setData(Qt.UserRole + 1, self.is_account_enabled(platform, account, env_values))
+        try:
+            env_file = find_dotenv()
+            if not env_file:
+                print("找不到.env文件，创建一个空的")
+                env_file = ensure_env_file()
                 
-                # 设置启用状态的显示
-                if item.data(Qt.UserRole + 1):
-                    item.setData(Qt.UserRole + 2, "true")
-                    item.setText(f"{account} (启用中)")
-                
-                account_list.addItem(item)
+            env_values = dotenv_values(env_file)
+            print(f"成功读取.env文件: {env_file}")
             
-            # 选择第一个账户
-            if account_list.count() > 0:
-                account_list.setCurrentRow(0)
-                self.select_account(platform, account_list.item(0))
+            # 为每个平台加载账户
+            for platform in self.platform_configs.keys():
+                if platform not in self.account_lists:
+                    print(f"警告: 找不到平台 {platform} 的账户列表")
+                    continue
+                    
+                account_list = self.account_lists[platform]
+                account_list.clear()
+                
+                # 查找该平台的所有账户
+                accounts = self.get_platform_accounts(platform, env_values)
+                
+                # 添加到列表
+                for account in accounts:
+                    item = QListWidgetItem(account)
+                    # 标记默认账户
+                    if account == "default":
+                        item.setData(Qt.UserRole, "default")
+                        # 检查是否有其他账户被设为启用
+                        is_enabled = True
+                        for other_account in accounts:
+                            if other_account != "default" and self.is_account_enabled(platform, other_account, env_values):
+                                is_enabled = False
+                                break
+                        item.setData(Qt.UserRole + 1, is_enabled)
+                    else:
+                        item.setData(Qt.UserRole, account)
+                        item.setData(Qt.UserRole + 1, self.is_account_enabled(platform, account, env_values))
+                    
+                    # 设置启用状态的显示
+                    if item.data(Qt.UserRole + 1):
+                        item.setData(Qt.UserRole + 2, "true")
+                        item.setText(f"{account} (启用中)")
+                    
+                    account_list.addItem(item)
+                
+                # 选择第一个账户
+                if account_list.count() > 0:
+                    account_list.setCurrentRow(0)
+                    self.select_account(platform, account_list.item(0))
+        except Exception as e:
+            print(f"加载设置时出错: {e}")
+            import traceback
+            traceback.print_exc()
 
     def is_account_enabled(self, platform, account, env_values=None):
         """检查账户是否被设为启用"""
@@ -739,6 +805,9 @@ def main():
         return
         
     try:
+        # 确保.env文件存在
+        ensure_env_file()
+        
         app = QApplication(sys.argv)
         window = RepoSyncMainWindow()
         window.show()
