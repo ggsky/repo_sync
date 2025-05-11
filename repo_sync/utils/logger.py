@@ -13,10 +13,15 @@ class ColoredFormatter(logging.Formatter):
     }
     def format(self, record):
         msg = record.getMessage()
+        original_msg = record.msg
         color = self.COLOR_MAP.get(record.levelno, '')
         msg = color + msg + Style.RESET_ALL
-        record.message = msg
-        return super().format(record)
+        record.msg = msg
+        formatted_message = super().format(record)
+        # 恢复原始消息
+        record.msg = original_msg
+        
+        return formatted_message
     
 # Configure logger
 logger = logging.getLogger('repo_sync')
