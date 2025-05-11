@@ -1,7 +1,16 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+'''
+@Contact :   liuyuqi.gov@msn.cn
+@Time    :   2023/04/27 02:55:59
+@License :   Copyright © 2017-2022 liuyuqi. All Rights Reserved.
+@Desc    :   repo_sync GUI入口
+'''
 import sys
 import os
 import threading
 import subprocess
+import yaml
 try:
     from PyQt5.QtWidgets import (
         QApplication, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -15,28 +24,385 @@ except ImportError:
     HAS_QT = False
     print("PyQt5 not installed, GUI mode not available")
 
-from repo_sync import RepoSync, __version__
-from dotenv import load_dotenv, set_key, find_dotenv, dotenv_values
-import json
-import uuid
-
-# Explorer路径获取
+# 直接导入repo_sync模块
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
-    import win32com.client
-    def get_active_explorer_path():
-        shell = win32com.client.Dispatch("Shell.Application")
-        for window in shell.Windows():
-            if window.Name in ["文件资源管理器", "Windows Explorer"]:
-                return window.Document.Folder.Self.Path
-        return os.getcwd()
+    from repo_sync.repo_sync import RepoSync
+    from repo_sync.version import __version__
+    from repo_sync.utils.config_reader import ConfigReader
 except ImportError:
-    def get_active_explorer_path():
-        return os.getcwd()
+    print("无法导入repo_sync模块，尝试直接导入...")
+    try:
+        from repo_sync import RepoSync
+        from repo_sync.version import __version__
+        from repo_sync.utils.config_reader import ConfigReader
+    except ImportError:
+        print("导入repo_sync模块失败，请确保repo_sync已正确安装")
+        __version__ = "未知"
+        
+        # 创建一个空的RepoSync类作为替代
+        class RepoSync:
+            def __init__(self, params):
+                self.params = params
+            def run(self):
+                print("RepoSync模块未找到，无法执行操作")
 
-# 命令执行信号类
-class CommandSignals(QObject):
-    output = pyqtSignal(str)
-    finished = pyqtSignal(int)
+# 确保config.yml文件存在
+def ensure_config_file():
+    config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yml')
+    if not os.path.exists(config_file):
+        # 创建空的config.yml文件
+        default_config = {
+            'accounts': {
+                'github': {
+                    'enable': 1,
+                    '1': {
+                        'username': '',
+                        'token': '',
+                        'private': True
+                    }
+                }
+            },
+            'log': {
+                'level': 'debug',
+                'file': '/tmp/repo_sync.log',
+                'max_size': '100MB',
+                'max_backups': 3,
+                'max_age': 7,
+                'console_formatter': {
+                    'level': 'debug',
+                    'format': '%(asctime)s - %(levelname)s - %(message)s'
+                },
+                'file_formatter': {
+                    'level': 'debug',
+                    'format': '%(asctime)s - %(levelname)s - %(message)s'
+                }
+            }
+        }
+        with open(config_file, 'w', encoding='utf-8') as f:
+            yaml.dump(default_config, f, default_flow_style=False)
+    return config_file
+
+class SettingsTab(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # 确保config.yml文件存在
+        ensure_config_file()
+        # 初始化account_lists字典
+        self.account_lists = {}
+        self.config_reader = ConfigReader()
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        
+        # 创建平台选择标签页
+        self.platform_tabs = QTabWidget()
+        
+        # 平台配置
+        self.platform_configs = {
+            "github": ["username", "token", "private"],
+            "gitlab": ["host", "username", "token", "private"],
+            "gitee": ["username", "token", "private"],
+            "gitcode": ["username", "token", "private"],
+            "git.yoq.me": ["username", "token", "private"],
+            "coding": ["username", "token", "project", "private"],
+            "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
+            "cnb": ["username", "token", "private"]
+        }
+        
+        # 为每个平台创建标签页
+        self.platform_pages = {}
+        for platform in self.platform_configs.keys():
+            page = QWidget()
+            page_layout = QVBoxLayout()
+            
+            # 账户列表
+            account_group = QGroupBox("Accounts")
+            account_layout = QVBoxLayout()
+            
+            account_list = QListWidget()
+            self.account_lists[platform] = account_list
+            account_list.currentItemChanged.connect(lambda current, previous, p=platform: self.select_account(p, current))
+            
+            account_buttons = QHBoxLayout()
+            add_btn = QPushButton("Add Account")
+            add_btn.clicked.connect(lambda checked, p=platform: self.add_account(p))
+            delete_btn = QPushButton("Delete Account")
+            delete_btn.clicked.connect(lambda checked, p=platform: self.delete_account(p))
+            enable_btn = QPushButton("Enable Account")
+            enable_btn.clicked.connect(lambda checked, p=platform: self.enable_account(p))
+            
+            account_buttons.addWidget(add_btn)
+            account_buttons.addWidget(delete_btn)
+            account_buttons.addWidget(enable_btn)
+            
+            account_layout.addWidget(account_list)
+            account_layout.addLayout(account_buttons)
+            account_group.setLayout(account_layout)
+            
+            # 账户详情表单
+            form_group = QGroupBox("Account Details")
+            form_layout = QFormLayout()
+            form_group.setLayout(form_layout)
+            
+            page_layout.addWidget(account_group)
+            page_layout.addWidget(form_group)
+            
+            # 保存按钮
+            save_btn = QPushButton("Save Settings")
+            save_btn.clicked.connect(self.save_settings)
+            page_layout.addWidget(save_btn)
+            
+            page.setLayout(page_layout)
+            self.platform_pages[platform] = {
+                "form": form_layout
+            }
+            
+            self.platform_tabs.addTab(page, platform)
+        
+        layout.addWidget(self.platform_tabs)
+        self.setLayout(layout)
+        
+        # 加载设置
+        self.load_settings()
+
+    def load_settings(self):
+        # 为每个平台加载账户
+        for platform in self.platform_configs.keys():
+            account_list = self.account_lists[platform]
+            account_list.clear()
+            
+            # 获取该平台的所有账户
+            accounts = self.config_reader.get_platform_accounts(platform)
+            
+            # 添加到列表
+            for account in accounts:
+                item = QListWidgetItem(account)
+                account_list.addItem(item)
+            
+            # 选择第一个账户
+            if account_list.count() > 0:
+                account_list.setCurrentRow(0)
+                self.select_account(platform, account_list.item(0))
+
+    def select_account(self, platform, item):
+        if not item:
+            return
+        
+        account = item.text()
+        form = self.platform_pages[platform]["form"]
+        
+        # 清空表单
+        while form.rowCount() > 0:
+            form.removeRow(0)
+        
+        # 获取账户配置
+        account_config = self.config_reader.get_account_config(platform, account)
+        
+        # 创建表单项
+        self.field_widgets = {}
+        for field in self.platform_configs[platform]:
+            value = account_config.get(field, "")
+            
+            if field == "private":
+                widget = QCheckBox()
+                widget.setChecked(value if isinstance(value, bool) else value.lower() != "false")
+            else:
+                widget = QLineEdit()
+                if field in ["token", "password"]:
+                    widget.setEchoMode(QLineEdit.Password)
+                widget.setText(str(value))
+            
+            self.field_widgets[field] = widget
+            form.addRow(f"{field.capitalize()}:", widget)
+
+    def add_account(self, platform):
+        dialog = AddAccountDialog(platform, self)
+        if dialog.exec_() == QDialog.Accepted:
+            account_data = dialog.get_account_data()
+            account_name = account_data["name"]
+            
+            if not account_name:
+                QMessageBox.warning(self, "Warning", "Account name cannot be empty.")
+                return
+            
+            # 更新config.yml文件
+            config = self.config_reader.config
+            if platform not in config['accounts']:
+                config['accounts'][platform] = {'enable': 1}
+            
+            # 添加新账户
+            config['accounts'][platform][account_name] = {
+                field: value for field, value in account_data.items() if field != 'name'
+            }
+            
+            # 保存配置
+            with open(self.config_reader.config_path, 'w', encoding='utf-8') as f:
+                yaml.dump(config, f, default_flow_style=False)
+            
+            # 重新加载设置
+            self.config_reader = ConfigReader()
+            self.load_settings()
+            
+            # 选择新账户
+            account_list = self.account_lists[platform]
+            for i in range(account_list.count()):
+                if account_list.item(i).text() == account_name:
+                    account_list.setCurrentRow(i)
+                    self.select_account(platform, account_list.item(i))
+                    break
+
+    def delete_account(self, platform):
+        account_list = self.account_lists[platform]
+        current_item = account_list.currentItem()
+        
+        if not current_item:
+            return
+            
+        account = current_item.text()
+        
+        reply = QMessageBox.question(
+            self, 
+            "Confirm Deletion",
+            f"Are you sure you want to delete the account '{account}' for {platform}?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            # 更新config.yml文件
+            config = self.config_reader.config
+            if platform in config['accounts'] and account in config['accounts'][platform]:
+                del config['accounts'][platform][account]
+                
+                # 保存配置
+                with open(self.config_reader.config_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(config, f, default_flow_style=False)
+                
+                # 重新加载设置
+                self.config_reader = ConfigReader()
+                self.load_settings()
+
+    def enable_account(self, platform):
+        account_list = self.account_lists[platform]
+        current_item = account_list.currentItem()
+        
+        if not current_item:
+            return
+            
+        account = current_item.text()
+        
+        # 更新config.yml文件
+        config = self.config_reader.config
+        if platform in config['accounts']:
+            # 将当前账户的配置复制到第一个账户位置
+            account_config = config['accounts'][platform][account]
+            config['accounts'][platform]['1'] = account_config
+            
+            # 保存配置
+            with open(self.config_reader.config_path, 'w', encoding='utf-8') as f:
+                yaml.dump(config, f, default_flow_style=False)
+            
+            QMessageBox.information(
+                self, 
+                "Success", 
+                f"Account '{account}' has been enabled for {platform}."
+            )
+            
+            # 重新加载设置
+            self.config_reader = ConfigReader()
+            self.load_settings()
+
+    def save_settings(self):
+        # 保存当前显示的账户配置
+        platform = list(self.platform_configs.keys())[self.platform_tabs.currentIndex()]
+        account_list = self.account_lists[platform]
+        current_item = account_list.currentItem()
+        
+        if current_item and hasattr(self, 'field_widgets'):
+            account = current_item.text()
+            
+            # 更新config.yml文件
+            config = self.config_reader.config
+            if platform not in config['accounts']:
+                config['accounts'][platform] = {'enable': 1}
+            
+            # 更新账户配置
+            account_config = {}
+            for field, widget in self.field_widgets.items():
+                if isinstance(widget, QCheckBox):
+                    value = widget.isChecked()
+                else:
+                    value = widget.text().strip()
+                if value:
+                    account_config[field] = value
+            
+            config['accounts'][platform][account] = account_config
+            
+            # 保存配置
+            with open(self.config_reader.config_path, 'w', encoding='utf-8') as f:
+                yaml.dump(config, f, default_flow_style=False)
+            
+            QMessageBox.information(self, "Success", "Settings saved successfully!")
+
+class AddAccountDialog(QDialog):
+    def __init__(self, platform, parent=None):
+        super().__init__(parent)
+        self.platform = platform
+        self.init_ui()
+    
+    def init_ui(self):
+        self.setWindowTitle(f"Add {self.platform} Account")
+        layout = QFormLayout()
+        
+        # 账户名称
+        self.name_edit = QLineEdit()
+        layout.addRow("Account Name:", self.name_edit)
+        
+        # 其他字段
+        self.field_widgets = {}
+        platform_configs = {
+            "github": ["username", "token", "private"],
+            "gitlab": ["host", "username", "token", "private"],
+            "gitee": ["username", "token", "private"],
+            "gitcode": ["username", "token", "private"],
+            "git.yoq.me": ["username", "token", "private"],
+            "coding": ["username", "token", "project", "private"],
+            "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
+            "cnb": ["username", "token", "private"]
+        }
+        
+        for field in platform_configs[self.platform]:
+            if field == "private":
+                widget = QCheckBox()
+                widget.setChecked(True)
+            else:
+                widget = QLineEdit()
+                if field in ["token", "password"]:
+                    widget.setEchoMode(QLineEdit.Password)
+            
+            self.field_widgets[field] = widget
+            layout.addRow(f"{field.capitalize()}:", widget)
+        
+        # 按钮
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            Qt.Horizontal, self)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addRow(buttons)
+        
+        self.setLayout(layout)
+    
+    def get_account_data(self):
+        data = {"name": self.name_edit.text().strip()}
+        for field, widget in self.field_widgets.items():
+            if isinstance(widget, QCheckBox):
+                data[field] = widget.isChecked()
+            else:
+                data[field] = widget.text().strip()
+        return data
 
 class MainTab(QWidget):
     def __init__(self, parent=None):
@@ -271,436 +637,23 @@ class MainTab(QWidget):
             self.process.terminate()
             self.result_text.append("\nOperation cancelled by user.")
 
-# 添加账户对话框
-class AddAccountDialog(QDialog):
-    def __init__(self, platform, parent=None):
-        super().__init__(parent)
-        self.platform = platform
-        self.setWindowTitle(f"Add {platform.capitalize()} Account")
-        self.resize(400, 200)
-        
-        layout = QVBoxLayout()
-        
-        form_layout = QFormLayout()
-        self.account_name = QLineEdit()
-        form_layout.addRow("Account Name:", self.account_name)
-        
-        # 根据平台添加相应字段
-        self.fields = {}
-        platform_fields = {
-            "github": ["username", "token", "private"],
-            "gitlab": ["host", "username", "token", "private"],
-            "gitee": ["username", "token", "private"],
-            "gitcode": ["username", "token", "private"],
-            "git.yoq.me": ["username", "token", "private"],
-            "coding": ["username", "token", "project", "private"],
-            "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
-            "cnb": ["username", "token", "private"]
-        }
-        
-        for field in platform_fields.get(platform, ["username", "token"]):
-            if field == "private":
-                widget = QCheckBox()
-                widget.setChecked(True)
-            else:
-                widget = QLineEdit()
-                if field in ["token", "password"]:
-                    widget.setEchoMode(QLineEdit.Password)
-            
-            self.fields[field] = widget
-            form_layout.addRow(f"{field.capitalize()}:", widget)
-        
-        layout.addLayout(form_layout)
-        
-        # 按钮
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
-        
-        self.setLayout(layout)
-    
-    def get_account_data(self):
-        data = {"name": self.account_name.text()}
-        for field, widget in self.fields.items():
-            if isinstance(widget, QCheckBox):
-                data[field] = widget.isChecked()
-            else:
-                data[field] = widget.text()
-        return data
+# Explorer路径获取
+try:
+    import win32com.client
+    def get_active_explorer_path():
+        shell = win32com.client.Dispatch("Shell.Application")
+        for window in shell.Windows():
+            if window.Name in ["文件资源管理器", "Windows Explorer"]:
+                return window.Document.Folder.Self.Path
+        return os.getcwd()
+except ImportError:
+    def get_active_explorer_path():
+        return os.getcwd()
 
-class SettingsTab(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QVBoxLayout()
-        
-        # 创建平台选择标签页
-        self.platform_tabs = QTabWidget()
-        
-        # 平台配置
-        self.platform_configs = {
-            "github": ["username", "token", "private"],
-            "gitlab": ["host", "username", "token", "private"],
-            "gitee": ["username", "token", "private"],
-            "gitcode": ["username", "token", "private"],
-            "git.yoq.me": ["username", "token", "private"],
-            "coding": ["username", "token", "project", "private"],
-            "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
-            "cnb": ["username", "token", "private"]
-        }
-        
-        # 为每个平台创建标签页
-        self.platform_pages = {}
-        for platform in self.platform_configs.keys():
-            page = QWidget()
-            page_layout = QVBoxLayout()
-            
-            # 账户管理区域
-            account_group = QGroupBox("账户管理")
-            account_layout = QVBoxLayout()
-            
-            # 账户列表
-            accounts_list_layout = QHBoxLayout()
-            
-            # 左侧：账户列表
-            self.account_lists = {}
-            account_list = QListWidget()
-            account_list.setMinimumWidth(200)
-            account_list.itemClicked.connect(lambda item, p=platform: self.select_account(p, item))
-            account_list.setStyleSheet("""
-                QListWidget::item:selected { background-color: #a6d8ff; }
-                QListWidget::item[enabled="true"] { font-weight: bold; color: #0066cc; }
-            """)
-            accounts_list_layout.addWidget(account_list)
-            self.account_lists[platform] = account_list
-            
-            # 右侧：账户详情
-            account_details = QWidget()
-            account_form = QFormLayout()
-            account_details.setLayout(account_form)
-            accounts_list_layout.addWidget(account_details, 1)
-            
-            account_layout.addLayout(accounts_list_layout)
-            
-            # 账户操作按钮
-            buttons_layout = QHBoxLayout()
-            add_btn = QPushButton("添加账户")
-            add_btn.clicked.connect(lambda checked=False, p=platform: self.add_account(p))
-            delete_btn = QPushButton("删除账户")
-            delete_btn.clicked.connect(lambda checked=False, p=platform: self.delete_account(p))
-            enable_btn = QPushButton("设为启用")
-            enable_btn.clicked.connect(lambda checked=False, p=platform: self.enable_account(p))
-            
-            buttons_layout.addWidget(add_btn)
-            buttons_layout.addWidget(delete_btn)
-            buttons_layout.addWidget(enable_btn)
-            buttons_layout.addStretch()
-            
-            account_layout.addLayout(buttons_layout)
-            account_group.setLayout(account_layout)
-            page_layout.addWidget(account_group)
-            
-            # 保存页面引用
-            self.platform_pages[platform] = {
-                "page": page,
-                "form": account_form,
-                "details": account_details
-            }
-            
-            page.setLayout(page_layout)
-            self.platform_tabs.addTab(page, platform.capitalize())
-        
-        layout.addWidget(self.platform_tabs)
-        
-        # 保存按钮
-        self.save_btn = QPushButton("保存设置")
-        self.save_btn.clicked.connect(self.save_settings)
-        layout.addWidget(self.save_btn, alignment=Qt.AlignCenter)
-        
-        self.setLayout(layout)
-        
-        # 加载设置
-        self.load_settings()
-        
-        # 连接标签页变更事件
-        self.platform_tabs.currentChanged.connect(self.tab_changed)
-
-    def tab_changed(self, index):
-        try:
-            # 使用有序字典确保顺序一致性
-            platforms = list(self.platform_configs.keys())
-            if index < 0 or index >= len(platforms):
-                return
-            platform = platforms[index]
-            self.update_account_details(platform)
-        except Exception as e:
-            print(f"Error in tab_changed: {e}")
-
-    def load_settings(self):
-        # 读取.env文件
-        env_values = dotenv_values(find_dotenv())
-        
-        # 为每个平台加载账户
-        for platform in self.platform_configs.keys():
-            account_list = self.account_lists[platform]
-            account_list.clear()
-            
-            # 查找该平台的所有账户
-            accounts = self.get_platform_accounts(platform, env_values)
-            
-            # 添加到列表
-            for account in accounts:
-                item = QListWidgetItem(account)
-                # 标记默认账户
-                if account == "default":
-                    item.setData(Qt.UserRole, "default")
-                    # 检查是否有其他账户被设为启用
-                    is_enabled = True
-                    for other_account in accounts:
-                        if other_account != "default" and self.is_account_enabled(platform, other_account, env_values):
-                            is_enabled = False
-                            break
-                    item.setData(Qt.UserRole + 1, is_enabled)
-                else:
-                    item.setData(Qt.UserRole, account)
-                    item.setData(Qt.UserRole + 1, self.is_account_enabled(platform, account, env_values))
-                
-                # 设置启用状态的显示
-                if item.data(Qt.UserRole + 1):
-                    item.setData(Qt.UserRole + 2, "true")
-                    item.setText(f"{account} (启用中)")
-                
-                account_list.addItem(item)
-            
-            # 选择第一个账户
-            if account_list.count() > 0:
-                account_list.setCurrentRow(0)
-                self.select_account(platform, account_list.item(0))
-
-    def is_account_enabled(self, platform, account, env_values=None):
-        """检查账户是否被设为启用"""
-        if env_values is None:
-            env_values = dotenv_values(find_dotenv())
-        
-        if account == "default":
-            # 默认账户，检查是否有其他账户被设为启用
-            for key in env_values.keys():
-                if key.startswith(f"{platform}_") and "_enabled" in key and env_values[key].lower() == "true":
-                    return False
-            return True
-        else:
-            # 其他账户，检查是否有enabled标记
-            return env_values.get(f"{platform}_{account}_enabled", "").lower() == "true"
-
-    def get_platform_accounts(self, platform, env_values=None):
-        if env_values is None:
-            env_values = dotenv_values(find_dotenv())
-        
-        accounts = set()
-        # 默认账户
-        accounts.add("default")
-        
-        # 查找带有账户名的配置
-        prefix = f"{platform}_"
-        for key in env_values.keys():
-            if key.startswith(prefix) and "_" in key[len(prefix):]:
-                account_name = key[len(prefix):].split("_")[0]
-                if account_name != "default" and account_name != "":
-                    accounts.add(account_name)
-        
-        return sorted(list(accounts))
-
-    def select_account(self, platform, item):
-        if not item:
-            return
-        
-        account = item.data(Qt.UserRole)
-        form = self.platform_pages[platform]["form"]
-        
-        # 清空表单
-        while form.rowCount() > 0:
-            form.removeRow(0)
-        
-        # 读取账户配置
-        env_values = dotenv_values(find_dotenv())
-        
-        # 创建表单项
-        self.field_widgets = {}
-        for field in self.platform_configs[platform]:
-            key = f"{platform}_{account}_{field}" if account != "default" else f"{platform}_{field}"
-            value = env_values.get(key, "")
-            
-            if field == "private":
-                widget = QCheckBox()
-                widget.setChecked(value.lower() != "false")
-            else:
-                widget = QLineEdit()
-                if field in ["token", "password"]:
-                    widget.setEchoMode(QLineEdit.Password)
-                widget.setText(value)
-            
-            self.field_widgets[key] = widget
-            form.addRow(f"{field.capitalize()}:", widget)
-
-    def add_account(self, platform):
-        dialog = AddAccountDialog(platform, self)
-        if dialog.exec_() == QDialog.Accepted:
-            account_data = dialog.get_account_data()
-            account_name = account_data["name"]
-            
-            if not account_name:
-                QMessageBox.warning(self, "Warning", "Account name cannot be empty.")
-                return
-            
-            # 更新.env文件
-            env_file = find_dotenv()
-            if not env_file:
-                env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
-            
-            for field, value in account_data.items():
-                if field == "name":
-                    continue
-                
-                key = f"{platform}_{account_name}_{field}"
-                if isinstance(value, bool):
-                    value = str(value).lower()
-                
-                set_key(env_file, key, value)
-            
-            # 重新加载设置
-            self.load_settings()
-            
-            # 选择新账户
-            account_list = self.account_lists[platform]
-            for i in range(account_list.count()):
-                if account_list.item(i).data(Qt.UserRole) == account_name:
-                    account_list.setCurrentRow(i)
-                    self.select_account(platform, account_list.item(i))
-                    break
-
-    def delete_account(self, platform):
-        account_list = self.account_lists[platform]
-        current_item = account_list.currentItem()
-        
-        if not current_item:
-            return
-            
-        account = current_item.data(Qt.UserRole)
-        
-        if account == "default":
-            QMessageBox.warning(self, "Warning", "Cannot delete the default account.")
-            return
-        
-        reply = QMessageBox.question(
-            self, 
-            "Confirm Deletion",
-            f"Are you sure you want to delete the account '{account}' for {platform}?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            # 删除.env中的相关配置
-            env_file = find_dotenv()
-            env_values = dotenv_values(env_file)
-            
-            prefix = f"{platform}_{account}_"
-            keys_to_remove = [k for k in env_values.keys() if k.startswith(prefix)]
-            
-            # 重写.env文件，排除要删除的键
-            with open(env_file, 'w') as f:
-                for k, v in env_values.items():
-                    if k not in keys_to_remove:
-                        f.write(f"{k}={v}\n")
-            
-            # 重新加载设置
-            self.load_settings()
-
-    def enable_account(self, platform):
-        account_list = self.account_lists[platform]
-        current_item = account_list.currentItem()
-        
-        if not current_item:
-            return
-            
-        account = current_item.data(Qt.UserRole)
-        
-        # 读取账户配置
-        env_file = find_dotenv()
-        env_values = dotenv_values(env_file)
-        
-        # 先清除所有账户的启用状态
-        for key in list(env_values.keys()):
-            if key.startswith(f"{platform}_") and key.endswith("_enabled"):
-                del env_values[key]
-        
-        # 设置当前账户为启用
-        if account != "default":
-            set_key(env_file, f"{platform}_{account}_enabled", "true")
-            
-            # 将账户配置复制到默认配置
-            account_config = {}
-            prefix = f"{platform}_{account}_"
-            for key, value in env_values.items():
-                if key.startswith(prefix):
-                    field = key[len(prefix):]
-                    if field != "enabled":  # 不复制enabled标记
-                        account_config[field] = value
-            
-            # 更新默认配置
-            for field, value in account_config.items():
-                default_key = f"{platform}_{field}"
-                set_key(env_file, default_key, value)
-        
-        QMessageBox.information(
-            self, 
-            "Success", 
-            f"Account '{account}' has been enabled for {platform}."
-        )
-        
-        # 重新加载设置
-        self.load_settings()
-
-    def update_account_details(self, platform):
-        account_list = self.account_lists[platform]
-        current_item = account_list.currentItem()
-        
-        if current_item:
-            self.select_account(platform, current_item)
-
-    def save_settings(self):
-        env_file = find_dotenv()
-        if not env_file:
-            env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
-        
-        # 保存当前显示的账户配置
-        platform = list(self.platform_configs.keys())[self.platform_tabs.currentIndex()]
-        account_list = self.account_lists[platform]
-        current_item = account_list.currentItem()
-        
-        if current_item and hasattr(self, 'field_widgets'):
-            account = current_item.data(Qt.UserRole)
-            
-            for key, widget in self.field_widgets.items():
-                if key.startswith(f"{platform}_{account}"):
-                    if isinstance(widget, QCheckBox):
-                        value = str(widget.isChecked()).lower()
-                    else:
-                        value = widget.text().strip()
-                    
-                    if value:
-                        set_key(env_file, key, value)
-        
-        QMessageBox.information(self, "Success", "Settings saved successfully!")
-        
-        # 如果修改的是启用的账户，更新默认配置
-        if current_item and current_item.data(Qt.UserRole + 1):
-            self.enable_account(platform)
+# 命令执行信号类
+class CommandSignals(QObject):
+    output = pyqtSignal(str)
+    finished = pyqtSignal(int)
 
 class AboutTab(QWidget):
     def __init__(self, parent=None):
@@ -739,6 +692,9 @@ def main():
         return
         
     try:
+        # 确保config.yml文件存在
+        ensure_config_file()
+        
         app = QApplication(sys.argv)
         window = RepoSyncMainWindow()
         window.show()

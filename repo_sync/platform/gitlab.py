@@ -38,7 +38,7 @@ class GitlabIE(BasePlatform):
                 logger.error(f"create repo {repo_name} failed, status code {r.status_code}")
                 return
             logger.info(f"create repo {repo_name} success")
-            logger.info(f'{self.host}/{self.username}/{repo_name}')
+        logger.info(f'{self.host}/{self.username}/{repo_name}')
             # for repo in self.repos:
             #     if repo.name == repo_name:
             #         repo.url = r.json()["web_url"]

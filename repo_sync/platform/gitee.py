@@ -36,7 +36,7 @@ class GiteeIE(BasePlatform):
                 logger.error(f'create repo {repo_name} failed, status code {r.status_code}')
                 return
             logger.info(f'create repo {repo_name} success')
-            logger.info(f'{self._host}/{self.username}/{repo_name}')
+        logger.info(f'{self._host}/{self.username}/{repo_name}')
 
     def delete(self, repo_name: str):
         """delete a repo"""
