@@ -5,6 +5,20 @@
 @Time    :   2023/04/27 02:55:59
 @License :   Copyright © 2017-2022 liuyuqi. All Rights Reserved.
 @Desc    :   repo_sync GUI入口
+
+打包说明：
+使用PyInstaller可以将此应用打包为单个可执行文件：
+1. 安装必要的包: 
+   pip install pyinstaller
+   pip install -e .  # 以开发模式安装当前包
+
+2. 打包命令: 
+   pyinstaller --onefile --windowed --icon=icon.ico --add-data "repo_sync/config.yml;repo_sync" main_gui.py
+   (如果有图标文件，可以通过--icon参数指定)
+
+3. 打包后的可执行文件将位于dist目录中
+
+注意：确保在打包前先安装repo_sync包，这样PyInstaller才能正确找到所有依赖。
 '''
 import sys
 import os
@@ -16,7 +30,8 @@ try:
         QApplication, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
         QRadioButton, QPushButton, QButtonGroup, QGroupBox, QMessageBox, 
         QLineEdit, QScrollArea, QFileDialog, QFormLayout, QCheckBox, QTextEdit,
-        QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton, QListWidget, QListWidgetItem
+        QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton, QListWidget, QListWidgetItem,
+        QSpacerItem
     )
     from PyQt5.QtCore import Qt, pyqtSignal, QObject
     HAS_QT = True
@@ -25,7 +40,7 @@ except ImportError:
     print("PyQt5 not installed, GUI mode not available")
 
 # 直接导入repo_sync模块
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from repo_sync.repo_sync import RepoSync
     from repo_sync.version import __version__
@@ -34,8 +49,8 @@ except ImportError:
     print("无法导入repo_sync模块，尝试直接导入...")
     try:
         from repo_sync import RepoSync
-        from repo_sync.version import __version__
-        from repo_sync.utils.config_reader import ConfigReader
+        from version import __version__
+        from utils.config_reader import ConfigReader
     except ImportError:
         print("导入repo_sync模块失败，请确保repo_sync已正确安装")
         __version__ = "未知"
@@ -108,7 +123,7 @@ class SettingsTab(QWidget):
             "git.yoq.me": ["username", "token", "private"],
             "coding": ["username", "token", "project", "private"],
             "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
-            "cnb": ["username", "token", "private"]
+            "cnb": ["group", "username", "token", "private"]
         }
         
         # 为每个平台创建标签页
@@ -116,12 +131,19 @@ class SettingsTab(QWidget):
         for platform in self.platform_configs.keys():
             page = QWidget()
             page_layout = QVBoxLayout()
+            page_layout.setSpacing(15)  # 增加垂直间距
+            
+            # 创建水平布局，使账户列表和账户详情并排显示
+            accounts_details_layout = QHBoxLayout()
+            accounts_details_layout.setSpacing(20)  # 增加水平间距
             
             # 账户列表
             account_group = QGroupBox("Accounts")
             account_layout = QVBoxLayout()
+            account_layout.setSpacing(10)  # 增加垂直间距
             
             account_list = QListWidget()
+            account_list.setMinimumWidth(200)  # 设置最小宽度
             self.account_lists[platform] = account_list
             account_list.currentItemChanged.connect(lambda current, previous, p=platform: self.select_account(p, current))
             
@@ -144,15 +166,30 @@ class SettingsTab(QWidget):
             # 账户详情表单
             form_group = QGroupBox("Account Details")
             form_layout = QFormLayout()
-            form_group.setLayout(form_layout)
+            form_layout.setSpacing(10)  # 增加表单项之间的间距
             
-            page_layout.addWidget(account_group)
-            page_layout.addWidget(form_group)
+            # 创建一个垂直布局来组合表单和保存按钮
+            form_container = QVBoxLayout()
+            form_container.addLayout(form_layout)
+            
+            # 添加弹性空间，将保存按钮推到底部
+            form_container.addStretch(1)
             
             # 保存按钮
             save_btn = QPushButton("Save Settings")
             save_btn.clicked.connect(self.save_settings)
-            page_layout.addWidget(save_btn)
+            save_btn.setFixedHeight(30)  # 设置按钮高度
+            save_btn.setMinimumWidth(200)  # 设置最小宽度
+            form_container.addWidget(save_btn)
+            
+            form_group.setLayout(form_container)
+            
+            # 将账户列表和账户详情添加到水平布局中
+            accounts_details_layout.addWidget(account_group, 1)  # 1是伸缩因子
+            accounts_details_layout.addWidget(form_group, 2)     # 2是伸缩因子，使表单区域更宽
+            
+            # 添加水平布局到页面布局
+            page_layout.addLayout(accounts_details_layout)
             
             page.setLayout(page_layout)
             self.platform_pages[platform] = {
@@ -176,9 +213,16 @@ class SettingsTab(QWidget):
             # 获取该平台的所有账户
             accounts = self.config_reader.get_platform_accounts(platform)
             
+            # 获取启用的账户ID
+            enabled_account = str(self.config_reader.config['accounts'].get(platform, {}).get('enable', '1'))
+            
             # 添加到列表
             for account in accounts:
                 item = QListWidgetItem(account)
+                # 如果是启用的账户，设置背景色以突出显示
+                if account == enabled_account:
+                    item.setBackground(Qt.green)
+                    item.setText(f"{account} (启用中)")
                 account_list.addItem(item)
             
             # 选择第一个账户
@@ -187,10 +231,15 @@ class SettingsTab(QWidget):
                 self.select_account(platform, account_list.item(0))
 
     def select_account(self, platform, item):
+
         if not item:
             return
         
         account = item.text()
+        # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+        if " (启用中)" in account:
+            account = account.split(" (")[0]
+            
         form = self.platform_pages[platform]["form"]
         
         # 清空表单
@@ -199,7 +248,6 @@ class SettingsTab(QWidget):
         
         # 获取账户配置
         account_config = self.config_reader.get_account_config(platform, account)
-        
         # 创建表单项
         self.field_widgets = {}
         for field in self.platform_configs[platform]:
@@ -261,6 +309,9 @@ class SettingsTab(QWidget):
             return
             
         account = current_item.text()
+        # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+        if " (启用中)" in account:
+            account = account.split(" (")[0]
         
         reply = QMessageBox.question(
             self, 
@@ -292,13 +343,15 @@ class SettingsTab(QWidget):
             return
             
         account = current_item.text()
+        # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+        if " (启用中)" in account:
+            account = account.split(" (")[0]
         
         # 更新config.yml文件
         config = self.config_reader.config
         if platform in config['accounts']:
-            # 将当前账户的配置复制到第一个账户位置
-            account_config = config['accounts'][platform][account]
-            config['accounts'][platform]['1'] = account_config
+            # 将当前账户设置为启用账户
+            config['accounts'][platform]['enable'] = account
             
             # 保存配置
             with open(self.config_reader.config_path, 'w', encoding='utf-8') as f:
@@ -322,6 +375,9 @@ class SettingsTab(QWidget):
         
         if current_item and hasattr(self, 'field_widgets'):
             account = current_item.text()
+            # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+            if " (启用中)" in account:
+                account = account.split(" (")[0]
             
             # 更新config.yml文件
             config = self.config_reader.config
@@ -355,6 +411,7 @@ class AddAccountDialog(QDialog):
     def init_ui(self):
         self.setWindowTitle(f"Add {self.platform} Account")
         layout = QFormLayout()
+        layout.setSpacing(10)  # 增加表单项之间的间距
         
         # 账户名称
         self.name_edit = QLineEdit()
@@ -370,7 +427,7 @@ class AddAccountDialog(QDialog):
             "git.yoq.me": ["username", "token", "private"],
             "coding": ["username", "token", "project", "private"],
             "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
-            "cnb": ["username", "token", "private"]
+            "cnb": ["group", "username", "token", "private"]
         }
         
         for field in platform_configs[self.platform]:
@@ -385,6 +442,9 @@ class AddAccountDialog(QDialog):
             self.field_widgets[field] = widget
             layout.addRow(f"{field.capitalize()}:", widget)
         
+        # 添加一些空间
+        layout.addItem(QSpacerItem(20, 20))
+        
         # 按钮
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -394,6 +454,7 @@ class AddAccountDialog(QDialog):
         layout.addRow(buttons)
         
         self.setLayout(layout)
+        self.setMinimumWidth(400)  # 设置对话框最小宽度
     
     def get_account_data(self):
         data = {"name": self.name_edit.text().strip()}
@@ -427,7 +488,7 @@ class MainTab(QWidget):
         self.op_buttons = QButtonGroup(self)
         for i, op in enumerate(["create", "push", "pull", "clone", "delete"]):
             btn = QRadioButton(op.capitalize())
-            if i == 0:
+            if i == 1:
                 btn.setChecked(True)
             self.op_buttons.addButton(btn, i)
             op_layout.addWidget(btn)
@@ -485,6 +546,9 @@ class MainTab(QWidget):
         self.command_signals.output.connect(self.update_output)
         self.command_signals.finished.connect(self.process_finished)
         
+        # 初始化配置读取器
+        self.config_reader = ConfigReader()
+        
         # 平台变更时更新账户列表
         self.pf_buttons.buttonClicked.connect(self.update_account_list)
         self.update_account_list()
@@ -503,17 +567,17 @@ class MainTab(QWidget):
         accounts = self.get_platform_accounts(platform)
         
         # 找出启用的账户
-        enabled_account = "default"
-        env_values = dotenv_values(find_dotenv())
-        for account in accounts:
-            if account != "default" and env_values.get(f"{platform}_{account}_enabled", "").lower() == "true":
-                enabled_account = account
-                break
+        enabled_account = self.get_enabled_account(platform)
         
         # 添加账户到下拉框，启用的账户放在最前面
         if enabled_account in accounts:
             accounts.remove(enabled_account)
             self.account_combo.addItem(f"{enabled_account} (启用中)")
+            
+            # 设置启用账户的背景颜色为绿色
+            model = self.account_combo.model()
+            index = model.index(0, 0)
+            model.setData(index, Qt.green, Qt.BackgroundRole)
             
         for account in accounts:
             self.account_combo.addItem(account)
@@ -522,22 +586,32 @@ class MainTab(QWidget):
         self.account_combo.setCurrentIndex(0)
 
     def get_platform_accounts(self, platform):
-        # 读取.env文件中的所有配置
-        env_values = dotenv_values(find_dotenv())
+        # 读取config.yml文件中的所有配置
         accounts = set()
         
-        # 默认账户
-        accounts.add("default")
+        # 获取该平台的所有账户
+        try:
+            platform_accounts = self.config_reader.get_platform_accounts(platform)
+            for account in platform_accounts:
+                accounts.add(account)
+        except Exception as e:
+            print(f"Error getting platform accounts: {str(e)}")
         
-        # 查找带有账户名的配置
-        prefix = f"{platform}_"
-        for key in env_values.keys():
-            if key.startswith(prefix) and "_" in key[len(prefix):]:
-                account_name = key[len(prefix):].split("_")[0]
-                if account_name != "default" and account_name != "":
-                    accounts.add(account_name)
+        # 确保至少有一个默认账户
+        if not accounts:
+            accounts.add("1")
         
         return sorted(list(accounts))
+
+    def get_enabled_account(self, platform):
+        """获取平台的启用账户ID"""
+        try:
+            if platform in self.config_reader.config['accounts']:
+                return str(self.config_reader.config['accounts'][platform].get('enable', '1'))
+            return '1'  # 默认返回'1'
+        except Exception as e:
+            print(f"Error getting enabled account: {str(e)}")
+            return '1'  # 出错时默认返回'1'
 
     def run_repo_sync(self):
         repo_path = self.path_edit.text().strip()
@@ -558,41 +632,102 @@ class MainTab(QWidget):
         self.result_text.clear()
         
         # 检查平台配置
-        load_dotenv()
-        token_key = f"{pf}_{account}_token" if account != "default" else f"{pf}_token"
-        if not os.getenv(token_key):
+        account_config = self.config_reader.get_account_config(pf, account)
+        if not account_config.get('token'):
             QMessageBox.warning(self, "Warning", f"Please configure {pf} token for account '{account}' in Settings tab first.")
             return
-            
-        # 构建命令
-        cmd = [sys.executable, "-m", "repo_sync"]
-        cmd.append(op)
-        cmd.extend(["-p", pf])
-        cmd.extend(["-repo_path", repo_path])
         
-        # 如果不是默认账户，需要设置环境变量
-        env = os.environ.copy()
-        if account != "default":
-            # 读取账户配置
-            env_values = dotenv_values(find_dotenv())
-            for key, value in env_values.items():
-                if key.startswith(f"{pf}_{account}_"):
-                    field = key[len(f"{pf}_{account}_"):]
-                    env[f"{pf}_{field}"] = value
+        # 构建参数
+        args = {
+            'command': op,
+            'platform': pf,
+            'repo_path': repo_path
+        }
+        
+        # 获取启用的账户
+        enabled_account = self.get_enabled_account(pf)
+        
+        # 如果不是启用账户，需要设置环境变量
+        if account != enabled_account:
+            # 保存原始环境变量
+            self.original_env = {}
+            for field, value in account_config.items():
+                env_var = f"{pf}_{field}"
+                if env_var in os.environ:
+                    self.original_env[env_var] = os.environ[env_var]
+                os.environ[env_var] = str(value)
+        
+        # 显示执行命令
+        cmd_str = f"repo_sync {op} -p {pf} -repo_path {repo_path}"
+        self.result_text.append(f"Running: {cmd_str}\n")
         
         # 执行命令
         self.run_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
-        self.result_text.append(f"Running: {' '.join(cmd)}\n")
+        
+        # 重定向标准输出和标准错误
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        sys.stdout = self.OutputRedirector(self.command_signals)
+        sys.stderr = self.OutputRedirector(self.command_signals)
         
         # 在新线程中执行命令
         self.process_thread = threading.Thread(
-            target=self.run_process,
-            args=(cmd, env)
+            target=self.run_module,
+            args=(args,)
         )
         self.process_thread.daemon = True
         self.process_thread.start()
 
+    def run_module(self, args):
+        try:
+            # 正确导入repo_sync模块的main函数
+            from repo_sync import main
+            self.running = True
+            return_code = 0
+            try:
+                main(args)
+            except SystemExit as e:
+                return_code = e.code if isinstance(e.code, int) else 1
+            except Exception as e:
+                self.command_signals.output.emit(f"Error: {str(e)}")
+                return_code = 1
+            finally:
+                self.command_signals.finished.emit(return_code)
+                # 恢复标准输出和标准错误
+                sys.stdout = self.original_stdout
+                sys.stderr = self.original_stderr
+                # 恢复环境变量
+                if hasattr(self, 'original_env'):
+                    for var, value in self.original_env.items():
+                        os.environ[var] = value
+                    delattr(self, 'original_env')
+        except Exception as e:
+            self.command_signals.output.emit(f"Error: {str(e)}")
+            self.command_signals.finished.emit(1)
+            # 恢复标准输出和标准错误
+            sys.stdout = self.original_stdout
+            sys.stderr = self.original_stderr
+
+    # 输出重定向类
+    class OutputRedirector:
+        def __init__(self, signals):
+            self.signals = signals
+            self.buffer = ""
+        
+        def write(self, text):
+            self.buffer += text
+            if '\n' in self.buffer:
+                lines = self.buffer.split('\n')
+                for line in lines[:-1]:
+                    self.signals.output.emit(line)
+                self.buffer = lines[-1]
+        
+        def flush(self):
+            if self.buffer:
+                self.signals.output.emit(self.buffer)
+                self.buffer = ""
+                
     def run_process(self, cmd, env=None):
         try:
             self.process = subprocess.Popen(
@@ -636,6 +771,19 @@ class MainTab(QWidget):
         if self.process:
             self.process.terminate()
             self.result_text.append("\nOperation cancelled by user.")
+        else:
+            # 直接调用模式下，通过退出标志通知线程结束
+            self.running = False
+            self.result_text.append("\nOperation cancelled by user.")
+            # 恢复标准输出和标准错误
+            if hasattr(self, 'original_stdout') and hasattr(self, 'original_stderr'):
+                sys.stdout = self.original_stdout
+                sys.stderr = self.original_stderr
+            # 恢复环境变量
+            if hasattr(self, 'original_env'):
+                for var, value in self.original_env.items():
+                    os.environ[var] = value
+                delattr(self, 'original_env')
 
 # Explorer路径获取
 try:
@@ -666,7 +814,7 @@ class AboutTab(QWidget):
         layout.addWidget(QLabel("- 支持多个代码托管平台"))
         layout.addWidget(QLabel("- 支持创建/推送/拉取/克隆/删除操作"))
         layout.addWidget(QLabel("- 自动获取资源管理器当前路径"))
-        layout.addWidget(QLabel("- 配置信息保存在.env文件中"))
+        layout.addWidget(QLabel("- 配置信息保存在config.yml文件中"))
         layout.addWidget(QLabel("- 支持每个平台配置多个账户"))
         layout.addWidget(QLabel("- 命令行执行结果实时显示"))
         self.setLayout(layout)

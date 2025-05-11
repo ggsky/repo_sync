@@ -31,7 +31,13 @@ class ConfigReader:
             return {}
     
     def get_platform_config(self, platform: str) -> Dict[str, Any]:
-        """Get platform configuration"""
+        """Get platform enable configuration
+        return: {
+                'username': '',
+                'token': '',
+                'private': True
+        }
+        """
         if not self.config or 'accounts' not in self.config:
             return {}
         
@@ -48,7 +54,11 @@ class ConfigReader:
         return {}
     
     def get_platform_accounts(self, platform: str) -> list:
-        """Get all accounts for a platform"""
+        """Get all accounts for a platform
+        return: [
+            
+        ]
+        """
         if not self.config or 'accounts' not in self.config:
             return []
         
@@ -69,7 +79,9 @@ class ConfigReader:
         return self.config.get('log', {})
     
     def get_account_config(self, platform: str, account_id: str) -> Dict[str, Any]:
-        """Get specific account configuration"""
+        """Get specific account configuration
+        
+        """
         if not self.config or 'accounts' not in self.config:
             return {}
         

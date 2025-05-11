@@ -57,9 +57,17 @@ def parser_args(overrideArguments=None):
     system_conf.update(command_line_conf)
     system_conf.update(custom_conf)
     if args.command == None and args.extractor == None:
-        raise 'Error, please input cmd and extractor params11'
+        raise 'Error, please input cmd and extractor params'
     return system_conf
 
+
+def only_combine_conf(args:dict):
+    system_conf = user_conf = custom_conf = OrderedDict()
+    user_conf = _read_custom_platform_conf("config.yml", args['platform'])
+    system_conf.update(user_conf)
+    system_conf.update(custom_conf)
+    system_conf.update(args)
+    return system_conf
 
 def _read_user_conf() -> OrderedDict:
     """读取用户配置文件: .env 文件"""
