@@ -30,7 +30,8 @@ try:
         QApplication, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
         QRadioButton, QPushButton, QButtonGroup, QGroupBox, QMessageBox, 
         QLineEdit, QScrollArea, QFileDialog, QFormLayout, QCheckBox, QTextEdit,
-        QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton, QListWidget, QListWidgetItem
+        QComboBox, QDialog, QDialogButtonBox, QGridLayout, QToolButton, QListWidget, QListWidgetItem,
+        QSpacerItem
     )
     from PyQt5.QtCore import Qt, pyqtSignal, QObject
     HAS_QT = True
@@ -130,12 +131,19 @@ class SettingsTab(QWidget):
         for platform in self.platform_configs.keys():
             page = QWidget()
             page_layout = QVBoxLayout()
+            page_layout.setSpacing(15)  # 增加垂直间距
+            
+            # 创建水平布局，使账户列表和账户详情并排显示
+            accounts_details_layout = QHBoxLayout()
+            accounts_details_layout.setSpacing(20)  # 增加水平间距
             
             # 账户列表
             account_group = QGroupBox("Accounts")
             account_layout = QVBoxLayout()
+            account_layout.setSpacing(10)  # 增加垂直间距
             
             account_list = QListWidget()
+            account_list.setMinimumWidth(200)  # 设置最小宽度
             self.account_lists[platform] = account_list
             account_list.currentItemChanged.connect(lambda current, previous, p=platform: self.select_account(p, current))
             
@@ -158,10 +166,15 @@ class SettingsTab(QWidget):
             # 账户详情表单
             form_group = QGroupBox("Account Details")
             form_layout = QFormLayout()
+            form_layout.setSpacing(10)  # 增加表单项之间的间距
             form_group.setLayout(form_layout)
             
-            page_layout.addWidget(account_group)
-            page_layout.addWidget(form_group)
+            # 将账户列表和账户详情添加到水平布局中
+            accounts_details_layout.addWidget(account_group, 1)  # 1是伸缩因子
+            accounts_details_layout.addWidget(form_group, 2)     # 2是伸缩因子，使表单区域更宽
+            
+            # 添加水平布局到页面布局
+            page_layout.addLayout(accounts_details_layout)
             
             # 保存按钮
             save_btn = QPushButton("Save Settings")
@@ -193,6 +206,10 @@ class SettingsTab(QWidget):
             # 添加到列表
             for account in accounts:
                 item = QListWidgetItem(account)
+                # 如果是启用的账户（账户名为"1"），设置背景色以突出显示
+                if account == "1":
+                    item.setBackground(Qt.green)
+                    item.setText(f"{account} (启用中)")
                 account_list.addItem(item)
             
             # 选择第一个账户
@@ -205,6 +222,10 @@ class SettingsTab(QWidget):
             return
         
         account = item.text()
+        # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+        if " (启用中)" in account:
+            account = account.split(" (")[0]
+            
         form = self.platform_pages[platform]["form"]
         
         # 清空表单
@@ -275,6 +296,9 @@ class SettingsTab(QWidget):
             return
             
         account = current_item.text()
+        # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+        if " (启用中)" in account:
+            account = account.split(" (")[0]
         
         reply = QMessageBox.question(
             self, 
@@ -306,6 +330,9 @@ class SettingsTab(QWidget):
             return
             
         account = current_item.text()
+        # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+        if " (启用中)" in account:
+            account = account.split(" (")[0]
         
         # 更新config.yml文件
         config = self.config_reader.config
@@ -336,6 +363,9 @@ class SettingsTab(QWidget):
         
         if current_item and hasattr(self, 'field_widgets'):
             account = current_item.text()
+            # 如果账户名包含 "(启用中)" 后缀，去掉后缀
+            if " (启用中)" in account:
+                account = account.split(" (")[0]
             
             # 更新config.yml文件
             config = self.config_reader.config
@@ -369,6 +399,7 @@ class AddAccountDialog(QDialog):
     def init_ui(self):
         self.setWindowTitle(f"Add {self.platform} Account")
         layout = QFormLayout()
+        layout.setSpacing(10)  # 增加表单项之间的间距
         
         # 账户名称
         self.name_edit = QLineEdit()
@@ -399,6 +430,9 @@ class AddAccountDialog(QDialog):
             self.field_widgets[field] = widget
             layout.addRow(f"{field.capitalize()}:", widget)
         
+        # 添加一些空间
+        layout.addItem(QSpacerItem(20, 20))
+        
         # 按钮
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -408,6 +442,7 @@ class AddAccountDialog(QDialog):
         layout.addRow(buttons)
         
         self.setLayout(layout)
+        self.setMinimumWidth(400)  # 设置对话框最小宽度
     
     def get_account_data(self):
         data = {"name": self.name_edit.text().strip()}
@@ -526,6 +561,11 @@ class MainTab(QWidget):
         if enabled_account in accounts:
             accounts.remove(enabled_account)
             self.account_combo.addItem(f"{enabled_account} (启用中)")
+            
+            # 设置启用账户的背景颜色为绿色
+            model = self.account_combo.model()
+            index = model.index(0, 0)
+            model.setData(index, Qt.green, Qt.BackgroundRole)
             
         for account in accounts:
             self.account_combo.addItem(account)
