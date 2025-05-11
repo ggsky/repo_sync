@@ -3,7 +3,32 @@ import yaml
 import os
 from colorama import Fore, Style
 import colorama
+import re
 colorama.init()
+
+def parse_size(size_str):
+    """Convert human readable size string to bytes"""
+    if isinstance(size_str, (int, float)):
+        return int(size_str)
+    
+    units = {
+        'B': 1,
+        'KB': 1024,
+        'MB': 1024 * 1024,
+        'GB': 1024 * 1024 * 1024,
+        'TB': 1024 * 1024 * 1024 * 1024
+    }
+    
+    # Extract number and unit
+    match = re.match(r'^(\d+)\s*([A-Za-z]+)?$', str(size_str).strip())
+    if not match:
+        return 100 * 1024 * 1024  # Default to 100MB if parsing fails
+    
+    number, unit = match.groups()
+    unit = unit.upper() if unit else 'B'
+    
+    # Convert to bytes
+    return int(float(number) * units.get(unit, 1))
 
 class ColoredFormatter(logging.Formatter):
     COLOR_MAP = {
@@ -46,8 +71,8 @@ def setup_logger():
     from logging.handlers import RotatingFileHandler
     file_handler = RotatingFileHandler(
         log_config.get('file', 'repo_sync.log'),
-        maxBytes=log_config.get('max_size', 100 * 1024 * 1024),  # Default 100MB
-        backupCount=log_config.get('max_backups', 3)
+        maxBytes=parse_size(log_config.get('max_size', '100MB')),  # Parse human-readable size
+        backupCount=int(log_config.get('max_backups', 3))
     )
     file_handler.setLevel(getattr(logging, log_config.get('file_formatter', {}).get('level', 'INFO').upper()))
     

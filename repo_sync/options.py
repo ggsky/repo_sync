@@ -92,5 +92,8 @@ def _read_custom_conf(config_path: str) -> OrderedDict:
     # Convert platform accounts to environment variables format
     for platform, accounts in platform_accounts.items():
         for account in accounts:
+            account_config = config_reader.get_account_config(platform, account)
+            for key, value in account_config.items():
+                custom_conf[f"{platform}_{account}_{key}"] = str(value)
     
     return custom_conf
