@@ -682,13 +682,11 @@ class MainTab(QWidget):
     def run_module(self, args):
         try:
             # 正确导入repo_sync模块的main函数
-            from repo_sync.repo_sync import RepoSync
+            from repo_sync import main
             self.running = True
             return_code = 0
             try:
-                # 直接创建RepoSync实例并运行
-                rs = RepoSync(args)
-                rs.run()
+                main(args)
             except SystemExit as e:
                 return_code = e.code if isinstance(e.code, int) else 1
             except Exception as e:

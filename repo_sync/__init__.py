@@ -1,6 +1,6 @@
 from .repo_sync import RepoSync
 from .version import __version__
-from .options import parser_args
+from .options import parser_args, only_combine_conf
 from .utils.logger import logger
 import sys
 
@@ -9,7 +9,7 @@ def main(argv=None):
     try:
         # 如果argv是字典类型，直接使用这些参数
         if isinstance(argv, dict):
-            args = argv
+            args= only_combine_conf(argv)
         else:
             args = parser_args(argv)
             
