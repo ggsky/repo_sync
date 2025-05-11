@@ -203,11 +203,14 @@ class SettingsTab(QWidget):
             # 获取该平台的所有账户
             accounts = self.config_reader.get_platform_accounts(platform)
             
+            # 获取启用的账户ID
+            enabled_account = str(self.config_reader.config['accounts'].get(platform, {}).get('enable', '1'))
+            
             # 添加到列表
             for account in accounts:
                 item = QListWidgetItem(account)
-                # 如果是启用的账户（账户名为"1"），设置背景色以突出显示
-                if account == "1":
+                # 如果是启用的账户，设置背景色以突出显示
+                if account == enabled_account:
                     item.setBackground(Qt.green)
                     item.setText(f"{account} (启用中)")
                 account_list.addItem(item)
@@ -337,9 +340,8 @@ class SettingsTab(QWidget):
         # 更新config.yml文件
         config = self.config_reader.config
         if platform in config['accounts']:
-            # 将当前账户的配置复制到第一个账户位置
-            account_config = config['accounts'][platform][account]
-            config['accounts'][platform]['1'] = account_config
+            # 将当前账户设置为启用账户
+            config['accounts'][platform]['enable'] = account
             
             # 保存配置
             with open(self.config_reader.config_path, 'w', encoding='utf-8') as f:
@@ -555,7 +557,7 @@ class MainTab(QWidget):
         accounts = self.get_platform_accounts(platform)
         
         # 找出启用的账户
-        enabled_account = "1"
+        enabled_account = self.get_enabled_account(platform)
         
         # 添加账户到下拉框，启用的账户放在最前面
         if enabled_account in accounts:
@@ -591,6 +593,16 @@ class MainTab(QWidget):
         
         return sorted(list(accounts))
 
+    def get_enabled_account(self, platform):
+        """获取平台的启用账户ID"""
+        try:
+            if platform in self.config_reader.config['accounts']:
+                return str(self.config_reader.config['accounts'][platform].get('enable', '1'))
+            return '1'  # 默认返回'1'
+        except Exception as e:
+            print(f"Error getting enabled account: {str(e)}")
+            return '1'  # 出错时默认返回'1'
+
     def run_repo_sync(self):
         repo_path = self.path_edit.text().strip()
         if not repo_path:
@@ -622,8 +634,11 @@ class MainTab(QWidget):
             'repo_path': repo_path
         }
         
-        # 如果不是默认账户，需要设置环境变量
-        if account != "1":
+        # 获取启用的账户
+        enabled_account = self.get_enabled_account(pf)
+        
+        # 如果不是启用账户，需要设置环境变量
+        if account != enabled_account:
             # 保存原始环境变量
             self.original_env = {}
             for field, value in account_config.items():
