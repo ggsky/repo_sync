@@ -29,7 +29,7 @@ class CnbIE(BasePlatform):
             url = f'{self._api}/{self.group}/-/repos'
             response = self.sess.post(url, json={
                 "name": repo_name, 
-                "description": "xxx",
+                "description": "",
              "visibility": "private" if self.repo_private else "public"
              })
             if response.status_code == 201:
