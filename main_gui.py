@@ -8,10 +8,17 @@
 
 打包说明：
 使用PyInstaller可以将此应用打包为单个可执行文件：
-1. 安装PyInstaller: pip install pyinstaller
-2. 打包命令: pyinstaller --onefile --windowed --icon=icon.ico main_gui.py
+1. 安装必要的包: 
+   pip install pyinstaller
+   pip install -e .  # 以开发模式安装当前包
+
+2. 打包命令: 
+   pyinstaller --onefile --windowed --icon=icon.ico --add-data "repo_sync/config.yml;repo_sync" main_gui.py
    (如果有图标文件，可以通过--icon参数指定)
+
 3. 打包后的可执行文件将位于dist目录中
+
+注意：确保在打包前先安装repo_sync包，这样PyInstaller才能正确找到所有依赖。
 '''
 import sys
 import os
@@ -32,7 +39,7 @@ except ImportError:
     print("PyQt5 not installed, GUI mode not available")
 
 # 直接导入repo_sync模块
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from repo_sync.repo_sync import RepoSync
     from repo_sync.version import __version__
@@ -41,8 +48,8 @@ except ImportError:
     print("无法导入repo_sync模块，尝试直接导入...")
     try:
         from repo_sync import RepoSync
-        from repo_sync.version import __version__
-        from repo_sync.utils.config_reader import ConfigReader
+        from version import __version__
+        from utils.config_reader import ConfigReader
     except ImportError:
         print("导入repo_sync模块失败，请确保repo_sync已正确安装")
         __version__ = "未知"
@@ -609,12 +616,14 @@ class MainTab(QWidget):
 
     def run_module(self, args):
         try:
-            from repo_sync import main
+            # 正确导入repo_sync模块的main函数
+            from repo_sync.repo_sync import RepoSync
             self.running = True
             return_code = 0
             try:
-                # 调用 repo_sync 的 main 函数
-                main(args)
+                # 直接创建RepoSync实例并运行
+                rs = RepoSync(args)
+                rs.run()
             except SystemExit as e:
                 return_code = e.code if isinstance(e.code, int) else 1
             except Exception as e:
