@@ -1,5 +1,6 @@
-requests==2.27.1
+requests>=2.31.0
 python-dotenv==1.0.0
+pyyaml>=6.0.1
+colorama
 PyQt5
 pywin32
-colorama
