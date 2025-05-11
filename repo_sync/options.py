@@ -13,13 +13,14 @@ import shlex
 import dotenv
 from collections import OrderedDict
 from .utils.str_util import preferredencoding
+from .utils.config_reader import ConfigReader
 
 
 def parser_args(overrideArguments=None):
     """解析参数"""
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('-c', '--config', help='config file', default='config.ini')
+    argparser.add_argument('-c', '--config', help='config file', default='config.yml')
     argparser.add_argument(
         'command',
         help='command: ',
@@ -50,30 +51,13 @@ def parser_args(overrideArguments=None):
     user_conf = _read_user_conf()
 
     if args.config:
-        custom_conf = _read_custom_conf(args.config)
+        custom_conf = _read_custom_platform_conf(args.config, args.platform)
 
     system_conf.update(user_conf)
     system_conf.update(command_line_conf)
     if args.command == None and args.extractor == None:
         raise 'Error, please input cmd and extractor params11'
     return system_conf
-
-
-def _read_custom_conf(config_path: str) -> OrderedDict:
-    """读取自定义配置文件 config.yaml"""
-
-    def compat_shlex_split(s, comments=False, posix=True):
-        if isinstance(s, str):
-            s = s.encode('utf-8')
-        return list(map(lambda s: s.decode('utf-8'), shlex.split(s, comments, posix)))
-
-    try:
-        with open(config_path, 'r', encoding=preferredencoding()) as f:
-            contents = f.read()
-            res = compat_shlex_split(contents, comments=True)
-    except Exception as e:
-        return []
-    return res
 
 
 def _read_user_conf() -> OrderedDict:
@@ -83,3 +67,30 @@ def _read_user_conf() -> OrderedDict:
     if os.path.exists(dotenv_path):
         user_conf = dotenv.dotenv_values(dotenv_path)
     return OrderedDict(user_conf)
+
+def _read_custom_platform_conf(config_path:str="config.yml",platform:str="github") -> OrderedDict:
+    """读取自定义平台配置文件"""
+    config_reader = ConfigReader(config_path)
+    custom_conf = OrderedDict()
+    
+    # Get platform enable list
+    platform_config = config_reader.get_platform_config(platform)
+    # Convert platform config to environment variables format
+    for key, value in platform_config.items():
+        custom_conf[f"{platform}_{key}"] = str(value)
+    
+    return custom_conf
+
+def _read_custom_conf(config_path: str) -> OrderedDict:
+    """读取自定义配置文件"""
+    config_reader = ConfigReader(config_path)
+    custom_conf = OrderedDict()
+    
+    # Get all platform accounts
+    platform_accounts = config_reader.get_platform_accounts()
+    
+    # Convert platform accounts to environment variables format
+    for platform, accounts in platform_accounts.items():
+        for account in accounts:
+    
+    return custom_conf
