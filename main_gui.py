@@ -167,7 +167,22 @@ class SettingsTab(QWidget):
             form_group = QGroupBox("Account Details")
             form_layout = QFormLayout()
             form_layout.setSpacing(10)  # 增加表单项之间的间距
-            form_group.setLayout(form_layout)
+            
+            # 创建一个垂直布局来组合表单和保存按钮
+            form_container = QVBoxLayout()
+            form_container.addLayout(form_layout)
+            
+            # 添加弹性空间，将保存按钮推到底部
+            form_container.addStretch(1)
+            
+            # 保存按钮
+            save_btn = QPushButton("Save Settings")
+            save_btn.clicked.connect(self.save_settings)
+            save_btn.setFixedHeight(30)  # 设置按钮高度
+            save_btn.setMinimumWidth(200)  # 设置最小宽度
+            form_container.addWidget(save_btn)
+            
+            form_group.setLayout(form_container)
             
             # 将账户列表和账户详情添加到水平布局中
             accounts_details_layout.addWidget(account_group, 1)  # 1是伸缩因子
@@ -175,11 +190,6 @@ class SettingsTab(QWidget):
             
             # 添加水平布局到页面布局
             page_layout.addLayout(accounts_details_layout)
-            
-            # 保存按钮
-            save_btn = QPushButton("Save Settings")
-            save_btn.clicked.connect(self.save_settings)
-            page_layout.addWidget(save_btn)
             
             page.setLayout(page_layout)
             self.platform_pages[platform] = {
@@ -221,6 +231,7 @@ class SettingsTab(QWidget):
                 self.select_account(platform, account_list.item(0))
 
     def select_account(self, platform, item):
+
         if not item:
             return
         
@@ -237,7 +248,6 @@ class SettingsTab(QWidget):
         
         # 获取账户配置
         account_config = self.config_reader.get_account_config(platform, account)
-        
         # 创建表单项
         self.field_widgets = {}
         for field in self.platform_configs[platform]:
