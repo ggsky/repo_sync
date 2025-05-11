@@ -1,0 +1,37 @@
+accounts:
+  github:
+    enable: 1
+    1:
+      username: jianboy
+      token: xx
+      private: true
+    2:
+      username: xx
+      token: xx
+      private: true
+  gitlab:
+    enable: 1
+    1:
+      host: https://gitlab.com
+      username: jianboy
+      token: glpat-xx-m1
+      private: true
+    2:
+      host: https://gitlab.com
+      username: jianboy
+      token: glpat-xx-m1
+      private: true
+
+log:
+  level: debug
+  file: /tmp/repo_sync.log
+  max_size: 100MB
+  max_backups: 3
+  max_age: 7
+  # console_formatter，file_formatter
+  console_formatter:
+    level: debug
+    format: "%(asctime)s - %(levelname)s - %(message)s"
+  file_formatter:
+    level: debug
+    format: "%(asctime)s - %(levelname)s - %(message)s"
