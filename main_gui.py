@@ -123,7 +123,7 @@ class SettingsTab(QWidget):
             "git.yoq.me": ["username", "token", "private"],
             "coding": ["username", "token", "project", "private"],
             "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
-            "cnb": ["username", "token", "private"]
+            "cnb": ["group", "username", "token", "private"]
         }
         
         # 为每个平台创建标签页
@@ -427,7 +427,7 @@ class AddAccountDialog(QDialog):
             "git.yoq.me": ["username", "token", "private"],
             "coding": ["username", "token", "project", "private"],
             "aliyun": ["compoanyid", "group_id", "username", "token", "private"],
-            "cnb": ["username", "token", "private"]
+            "cnb": ["group", "username", "token", "private"]
         }
         
         for field in platform_configs[self.platform]:
