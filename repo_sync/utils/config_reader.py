@@ -9,13 +9,14 @@
 
 import os
 import yaml
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+from repo_sync.utils.frozen_dir import get_app_path
 
 class ConfigReader:
     """YAML configuration reader"""
     
     def __init__(self, config_path: str = 'config.yml'):
-        self.config_path = config_path
+        self.config_path = os.path.join(get_app_path(), config_path)
         self.config = self._load_config()
     
     def _load_config(self) -> Dict[str, Any]:
