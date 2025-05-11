@@ -55,6 +55,7 @@ def parser_args(overrideArguments=None):
 
     system_conf.update(user_conf)
     system_conf.update(command_line_conf)
+    system_conf.update(custom_conf)
     if args.command == None and args.extractor == None:
         raise 'Error, please input cmd and extractor params11'
     return system_conf

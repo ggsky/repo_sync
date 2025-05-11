@@ -24,14 +24,14 @@ accounts:
 
 log:
   level: debug
-  file: /tmp/repo_sync.log
-  max_size: 100MB
+  # file: /tmp/repo_sync.log
+  file: repo_sync.log
+  max_size: 10MB
   max_backups: 3
   max_age: 7
-  # console_formatter，file_formatter
   console_formatter:
     level: debug
-    format: "%(asctime)s - %(levelname)s - %(message)s"
+    format: 
   file_formatter:
     level: debug
     format: "%(asctime)s - %(levelname)s - %(message)s"
