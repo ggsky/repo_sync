@@ -7,7 +7,12 @@ import sys
 def main(argv=None):
     """Main entry point of the program"""
     try:
-        args = parser_args()
+        # 如果argv是字典类型，直接使用这些参数
+        if isinstance(argv, dict):
+            args = argv
+        else:
+            args = parser_args(argv)
+            
         if args.get('version'):
             logger.info(__version__)
             sys.exit(0)

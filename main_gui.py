@@ -5,6 +5,13 @@
 @Time    :   2023/04/27 02:55:59
 @License :   Copyright © 2017-2022 liuyuqi. All Rights Reserved.
 @Desc    :   repo_sync GUI入口
+
+打包说明：
+使用PyInstaller可以将此应用打包为单个可执行文件：
+1. 安装PyInstaller: pip install pyinstaller
+2. 打包命令: pyinstaller --onefile --windowed --icon=icon.ico main_gui.py
+   (如果有图标文件，可以通过--icon参数指定)
+3. 打包后的可执行文件将位于dist目录中
 '''
 import sys
 import os
@@ -427,7 +434,7 @@ class MainTab(QWidget):
         self.op_buttons = QButtonGroup(self)
         for i, op in enumerate(["create", "push", "pull", "clone", "delete"]):
             btn = QRadioButton(op.capitalize())
-            if i == 0:
+            if i == 1:
                 btn.setChecked(True)
             self.op_buttons.addButton(btn, i)
             op_layout.addWidget(btn)
@@ -560,33 +567,95 @@ class MainTab(QWidget):
         if not account_config.get('token'):
             QMessageBox.warning(self, "Warning", f"Please configure {pf} token for account '{account}' in Settings tab first.")
             return
-            
-        # 构建命令
-        cmd = [sys.executable, "-m", "repo_sync"]
-        cmd.append(op)
-        cmd.extend(["-p", pf])
-        cmd.extend(["-repo_path", repo_path])
+        
+        # 构建参数
+        args = {
+            'command': op,
+            'platform': pf,
+            'repo_path': repo_path
+        }
         
         # 如果不是默认账户，需要设置环境变量
-        env = os.environ.copy()
         if account != "1":
-            # 读取账户配置
+            # 保存原始环境变量
+            self.original_env = {}
             for field, value in account_config.items():
-                env[f"{pf}_{field}"] = str(value)
+                env_var = f"{pf}_{field}"
+                if env_var in os.environ:
+                    self.original_env[env_var] = os.environ[env_var]
+                os.environ[env_var] = str(value)
+        
+        # 显示执行命令
+        cmd_str = f"repo_sync {op} -p {pf} -repo_path {repo_path}"
+        self.result_text.append(f"Running: {cmd_str}\n")
         
         # 执行命令
         self.run_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
-        self.result_text.append(f"Running: {' '.join(cmd)}\n")
+        
+        # 重定向标准输出和标准错误
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        sys.stdout = self.OutputRedirector(self.command_signals)
+        sys.stderr = self.OutputRedirector(self.command_signals)
         
         # 在新线程中执行命令
         self.process_thread = threading.Thread(
-            target=self.run_process,
-            args=(cmd, env)
+            target=self.run_module,
+            args=(args,)
         )
         self.process_thread.daemon = True
         self.process_thread.start()
 
+    def run_module(self, args):
+        try:
+            from repo_sync import main
+            self.running = True
+            return_code = 0
+            try:
+                # 调用 repo_sync 的 main 函数
+                main(args)
+            except SystemExit as e:
+                return_code = e.code if isinstance(e.code, int) else 1
+            except Exception as e:
+                self.command_signals.output.emit(f"Error: {str(e)}")
+                return_code = 1
+            finally:
+                self.command_signals.finished.emit(return_code)
+                # 恢复标准输出和标准错误
+                sys.stdout = self.original_stdout
+                sys.stderr = self.original_stderr
+                # 恢复环境变量
+                if hasattr(self, 'original_env'):
+                    for var, value in self.original_env.items():
+                        os.environ[var] = value
+                    delattr(self, 'original_env')
+        except Exception as e:
+            self.command_signals.output.emit(f"Error: {str(e)}")
+            self.command_signals.finished.emit(1)
+            # 恢复标准输出和标准错误
+            sys.stdout = self.original_stdout
+            sys.stderr = self.original_stderr
+
+    # 输出重定向类
+    class OutputRedirector:
+        def __init__(self, signals):
+            self.signals = signals
+            self.buffer = ""
+        
+        def write(self, text):
+            self.buffer += text
+            if '\n' in self.buffer:
+                lines = self.buffer.split('\n')
+                for line in lines[:-1]:
+                    self.signals.output.emit(line)
+                self.buffer = lines[-1]
+        
+        def flush(self):
+            if self.buffer:
+                self.signals.output.emit(self.buffer)
+                self.buffer = ""
+                
     def run_process(self, cmd, env=None):
         try:
             self.process = subprocess.Popen(
@@ -630,6 +699,19 @@ class MainTab(QWidget):
         if self.process:
             self.process.terminate()
             self.result_text.append("\nOperation cancelled by user.")
+        else:
+            # 直接调用模式下，通过退出标志通知线程结束
+            self.running = False
+            self.result_text.append("\nOperation cancelled by user.")
+            # 恢复标准输出和标准错误
+            if hasattr(self, 'original_stdout') and hasattr(self, 'original_stderr'):
+                sys.stdout = self.original_stdout
+                sys.stderr = self.original_stderr
+            # 恢复环境变量
+            if hasattr(self, 'original_env'):
+                for var, value in self.original_env.items():
+                    os.environ[var] = value
+                delattr(self, 'original_env')
 
 # Explorer路径获取
 try:
