@@ -14,7 +14,7 @@ import dotenv
 from collections import OrderedDict
 from .utils.str_util import preferredencoding
 from .utils.config_reader import ConfigReader
-
+from .utils.frozen_dir import get_app_path
 
 def parser_args(overrideArguments=None):
     """解析参数"""
@@ -52,6 +52,9 @@ def parser_args(overrideArguments=None):
 
     if args.config:
         custom_conf = _read_custom_platform_conf(args.config, args.platform)
+   
+    app_path = get_app_path()
+    system_conf["app_path"] = app_path
 
     system_conf.update(user_conf)
     system_conf.update(command_line_conf)
@@ -62,8 +65,13 @@ def parser_args(overrideArguments=None):
 
 
 def only_combine_conf(args:dict):
+
     system_conf = user_conf = custom_conf = OrderedDict()
     user_conf = _read_custom_platform_conf("config.yml", args['platform'])
+
+    app_path = get_app_path()
+    system_conf["app_path"] = app_path
+    
     system_conf.update(user_conf)
     system_conf.update(custom_conf)
     system_conf.update(args)

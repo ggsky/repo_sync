@@ -1,6 +1,7 @@
 import logging
 import yaml
 import os
+from repo_sync.utils.frozen_dir import get_app_path
 from colorama import Fore, Style
 import colorama
 import re
@@ -51,7 +52,7 @@ class ColoredFormatter(logging.Formatter):
         return formatted_message
 
 def load_config():
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.yml')
+    config_path = os.path.join(get_app_path(), 'config.yml')
     with open(config_path, 'r') as f:
         return yaml.safe_load(f)
 
