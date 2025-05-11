@@ -485,6 +485,9 @@ class MainTab(QWidget):
         self.command_signals.output.connect(self.update_output)
         self.command_signals.finished.connect(self.process_finished)
         
+        # 初始化配置读取器
+        self.config_reader = ConfigReader()
+        
         # 平台变更时更新账户列表
         self.pf_buttons.buttonClicked.connect(self.update_account_list)
         self.update_account_list()
@@ -503,12 +506,7 @@ class MainTab(QWidget):
         accounts = self.get_platform_accounts(platform)
         
         # 找出启用的账户
-        enabled_account = "default"
-        env_values = dotenv_values(find_dotenv())
-        for account in accounts:
-            if account != "default" and env_values.get(f"{platform}_{account}_enabled", "").lower() == "true":
-                enabled_account = account
-                break
+        enabled_account = "1"
         
         # 添加账户到下拉框，启用的账户放在最前面
         if enabled_account in accounts:
@@ -522,20 +520,20 @@ class MainTab(QWidget):
         self.account_combo.setCurrentIndex(0)
 
     def get_platform_accounts(self, platform):
-        # 读取.env文件中的所有配置
-        env_values = dotenv_values(find_dotenv())
+        # 读取config.yml文件中的所有配置
         accounts = set()
         
-        # 默认账户
-        accounts.add("default")
+        # 获取该平台的所有账户
+        try:
+            platform_accounts = self.config_reader.get_platform_accounts(platform)
+            for account in platform_accounts:
+                accounts.add(account)
+        except Exception as e:
+            print(f"Error getting platform accounts: {str(e)}")
         
-        # 查找带有账户名的配置
-        prefix = f"{platform}_"
-        for key in env_values.keys():
-            if key.startswith(prefix) and "_" in key[len(prefix):]:
-                account_name = key[len(prefix):].split("_")[0]
-                if account_name != "default" and account_name != "":
-                    accounts.add(account_name)
+        # 确保至少有一个默认账户
+        if not accounts:
+            accounts.add("1")
         
         return sorted(list(accounts))
 
@@ -558,9 +556,8 @@ class MainTab(QWidget):
         self.result_text.clear()
         
         # 检查平台配置
-        load_dotenv()
-        token_key = f"{pf}_{account}_token" if account != "default" else f"{pf}_token"
-        if not os.getenv(token_key):
+        account_config = self.config_reader.get_account_config(pf, account)
+        if not account_config.get('token'):
             QMessageBox.warning(self, "Warning", f"Please configure {pf} token for account '{account}' in Settings tab first.")
             return
             
@@ -572,13 +569,10 @@ class MainTab(QWidget):
         
         # 如果不是默认账户，需要设置环境变量
         env = os.environ.copy()
-        if account != "default":
+        if account != "1":
             # 读取账户配置
-            env_values = dotenv_values(find_dotenv())
-            for key, value in env_values.items():
-                if key.startswith(f"{pf}_{account}_"):
-                    field = key[len(f"{pf}_{account}_"):]
-                    env[f"{pf}_{field}"] = value
+            for field, value in account_config.items():
+                env[f"{pf}_{field}"] = str(value)
         
         # 执行命令
         self.run_btn.setEnabled(False)
@@ -666,7 +660,7 @@ class AboutTab(QWidget):
         layout.addWidget(QLabel("- 支持多个代码托管平台"))
         layout.addWidget(QLabel("- 支持创建/推送/拉取/克隆/删除操作"))
         layout.addWidget(QLabel("- 自动获取资源管理器当前路径"))
-        layout.addWidget(QLabel("- 配置信息保存在.env文件中"))
+        layout.addWidget(QLabel("- 配置信息保存在config.yml文件中"))
         layout.addWidget(QLabel("- 支持每个平台配置多个账户"))
         layout.addWidget(QLabel("- 命令行执行结果实时显示"))
         self.setLayout(layout)
